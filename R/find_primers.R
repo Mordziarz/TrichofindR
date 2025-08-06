@@ -6,25 +6,24 @@
 #' summarizes and saves the results.
 #'
 #' @param genome_file A character string specifying the path to the genome file (e.g., a FASTA file).
-#' @param forward_primers A character vector of forward primer sequences. Defaults to `c(EF1_728F)` (if defined).
-#' @param reverse_primers A character vector of reverse primer sequences. Defaults to `c(TEF1LLErev)` (if defined).
+#' @param forward_primers A character vector of forward primer sequences.
+#' @param reverse_primers A character vector of reverse primer sequences.
 #' @param max_mismatch An integer specifying the maximum number of mismatches allowed for primer binding. Defaults to 1.
 #' @param max_amplicon_length An integer specifying the maximum allowed length of the amplicon (including primers). Defaults to 5000.
 #' @param min_amplicon_length An integer specifying the minimum allowed length of the amplicon (including primers). Defaults to 100.
-#' @param output_dir A character string specifying the directory to save the output files. Defaults to "tef1_contigs_results".
+#' @param output_dir A character string specifying the directory to save the output files. Defaults to "contigs_results".
 #' @param all A logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
 #'
 #' @return A list of lists, where each sublist contains details about the found amplicons.
 #' @examples
-#' # Assuming `tef1_primers_fwd` and `tef1_primers_rev` are defined
-#' # analyze_trichoderma_genome("my_genome.fasta", forward_primers = tef1_primers_fwd, reverse_primers = tef1_primers_rev)
+
 analyze_trichoderma_genome <- function(genome_file,
                                          forward_primers = c(TEF1),
                                          reverse_primers = c(TEF1),
                                          max_mismatch = 1,
                                          max_amplicon_length = 5000,
                                          min_amplicon_length = 100,
-                                         output_dir = "tef1_contigs_results",
+                                         output_dir = "contigs_results",
                                          all=FALSE) {
 
   cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS ===\n")
@@ -290,7 +289,7 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
   names(sequences_without_primers) <- headers_without_primers
 
   fasta_with_file <- file.path(output_dir, "amplicons_with_primers.fasta")
-  fasta_without_file <- file.path(output_dir, "amplicons_without_primers.fasta")
+  fasta_without_file <- file.path(output_dir, "genes_without_primers.fasta")
 
   writeXStringSet(sequences_with_primers, fasta_with_file)
   writeXStringSet(sequences_without_primers, fasta_without_file)

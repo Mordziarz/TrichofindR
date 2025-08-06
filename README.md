@@ -13,7 +13,7 @@ You will find the results of the analysis in the specified output directory. The
 
     amplicons_with_primers.fasta: A FASTA file containing all found amplicon sequences, including the primer regions.
 
-    amplicons_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
+    genes_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
 
     all_amplicons_summary.csv: A detailed CSV summary of all identified amplicons.
 
@@ -38,6 +38,8 @@ library(IRanges)
 
 This example shows how to search for the TEF1 gene. Note that the EF1-728F and TEF1LLErev primers can be found on both the forward and reverse strands, so they are included in both the forward_primers and reverse_primers arguments.
 
+all A logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
+
 ```r
 results <- analyze_trichoderma_genome(
   genome_file = "path/to/your/genome",
@@ -46,7 +48,8 @@ results <- analyze_trichoderma_genome(
   max_mismatch         = 1,
   max_amplicon_length  = 5000,
   min_amplicon_length  = 100,  
-  output_dir           = "tef1_contigs_results"
+  output_dir           = "tef1_contigs_results",
+  all=FALSE
 )
 ```
 # Using pre-defined primer sets
@@ -63,7 +66,8 @@ results <- analyze_trichoderma_genome(
   max_mismatch         = 1,
   max_amplicon_length  = 5000,
   min_amplicon_length  = 100,  
-  output_dir           = "RPB2_contigs_results"
+  output_dir           = "RPB2_contigs_results",
+  all=FALSE
 )
 ```
 
