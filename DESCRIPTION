@@ -1,11 +1,17 @@
 Package: TrichofindR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Tool for identifying Trichoderma species
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Mateusz Mazdziarz
+Maintainer: The package maintainer <mazdziarzm@gmail.com>
+Description: Tool for identifying Trichoderma species.
+License: MIT
 Encoding: UTF-8
-LazyData: true
+LazyData: false
+Depends: 
+    R (>= 3.5.0)
+Imports:
+    Biostrings (>= 2.72.1),
+    BSgenome (>= 1.72.0),
+    GenomicRanges (>= 1.56.2),
+    IRanges (>= 2.32.0),
