@@ -196,7 +196,7 @@ analyze_single_contig <- function(sequence, contig_name,
 
                 amplicon_info <- list(
                   contig_name = contig_name,
-                  amplicon_id = paste0("tef1_", gsub("[^A-Za-z0-9]", "_", contig_name), "_amp", amplicon_count),
+                  amplicon_id = paste0(gsub("[^A-Za-z0-9]", "_", contig_name), "_amp", amplicon_count),
                   forward_primer = fwd_primer,
                   reverse_primer = rev_primer,
                   fwd_start = fwd_start,
