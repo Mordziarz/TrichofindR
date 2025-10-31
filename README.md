@@ -71,4 +71,25 @@ results <- analyze_trichoderma_genome(
 )
 ```
 
+# BLAST against TrichofindR database
+
+The trichoderma_blast()﻿
+
+function allows you to perform a BLAST search against a reference database defined in TrichofindR (the reference_sequences argument). Currently, the following reference databases are available:
+
+1. ITS (ITS_reference_sequences)
+
+2. RPB2 (RPB2_reference_sequences)
+
+3. TEF1 (TEF1_reference_sequences)
+
+4. LNS2 (LNS2_reference_sequences)
+
+```r
+results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
+                               reference_sequences = ITS_reference_sequences
+)
+```
+
+
 We plan to continue developing and improving this program in the future.
