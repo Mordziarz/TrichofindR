@@ -27,6 +27,7 @@ library(Biostrings)
 library(BSgenome)
 library(GenomicRanges)
 library(IRanges)
+library(rBLAST)
 ```
 
 # Example: Identifying the TEF1 gene
