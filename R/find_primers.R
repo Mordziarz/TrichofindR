@@ -240,6 +240,7 @@ analyze_single_contig <- function(sequence, contig_name,
 #' @param genome_file A character string with the path to the original genome file, used for reporting.
 #'
 #' @return NULL. The function saves files to the specified directory and prints a summary.
+
 save_contig_results <- function(all_results, output_dir, genome_file) {
 
   all_amplicons <- unlist(all_results, recursive = FALSE)
@@ -294,79 +295,13 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
   writeXStringSet(sequences_with_primers, fasta_with_file)
   writeXStringSet(sequences_without_primers, fasta_without_file)
 
-  # CSV Summary
-  summary_data <- data.frame(
-    Amplicon_ID = sapply(all_amplicons, function(x) x$amplicon_id),
-    Contig_Name = sapply(all_amplicons, function(x) x$contig_name),
-    Forward_Primer = sapply(all_amplicons, function(x) x$forward_primer),
-    Reverse_Primer = sapply(all_amplicons, function(x) x$reverse_primer),
-    Forward_Start = sapply(all_amplicons, function(x) x$fwd_start),
-    Forward_End = sapply(all_amplicons, function(x) x$fwd_end),
-    Reverse_Start = sapply(all_amplicons, function(x) x$rev_start),
-    Reverse_End = sapply(all_amplicons, function(x) x$rev_end),
-    Amplicon_Length = sapply(all_amplicons, function(x) x$amplicon_length),
-    Gene_Length = sapply(all_amplicons, function(x) x$gene_length),
-    GC_Content = sapply(all_amplicons, function(x) round(x$gc_content, 2)),
-    stringsAsFactors = FALSE
-  )
-
-  summary_file <- file.path(output_dir, "all_amplicons_summary.csv")
-  write.csv(summary_data, summary_file, row.names = FALSE)
-
-  # Contig statistics
-  contig_stats <- data.frame(
-    Contig_Name = names(all_results),
-    Number_of_Amplicons = sapply(all_results, length),
-    stringsAsFactors = FALSE
-  )
-
-  contig_stats_file <- file.path(output_dir, "contig_statistics.csv")
-  write.csv(contig_stats, contig_stats_file, row.names = FALSE)
-
-  # Final report
-  report_lines <- c(
-    "=== GENOME ANALYSIS REPORT ===",
-    paste("Analysis date:", Sys.time()),
-    paste("Genome file:", basename(genome_file)),
-    "",
-    "FOUND AMPLİCONS:",
-    paste("Total number of amplicons:", length(all_amplicons)),
-    paste("Number of contigs with amplicons:", length(all_results)),
-    "",
-    "LENGTH STATISTICS:",
-    paste("Average amplicon length:", round(mean(summary_data$Amplicon_Length), 1), "bp"),
-    paste("Average gene length:", round(mean(summary_data$Gene_Length), 1), "bp"),
-    paste("Average GC content:", round(mean(summary_data$GC_Content), 1), "%"),
-    "",
-    "CONTIGS WITH AMPLİCONS:"
-  )
-
-  for (contig_name in names(all_results)) {
-    num_amps <- length(all_results[[contig_name]])
-    report_lines <- append(report_lines, paste("  ", contig_name, ":", num_amps, "amplicons"))
-  }
-
-  report_lines <- append(report_lines, c(
-    "",
-    "OUTPUT FILES:",
-    paste("  - Amplicons with primers:", basename(fasta_with_file)),
-    paste("  - Genes without primers:", basename(fasta_without_file)),
-    paste("  - Detailed summary:", basename(summary_file)),
-    paste("  - Contig statistics:", basename(contig_stats_file))
-  ))
-
-  report_file <- file.path(output_dir, "ANALYSIS_REPORT.txt")
-  writeLines(report_lines, report_file)
-
   cat("=== RESULTS SAVED ===\n")
   cat("Output folder:", output_dir, "\n")
   cat("Amplicons with primers:", fasta_with_file, "\n")
-  cat("Genes without primers:", fasta_without_file, "\n")
-  cat("Summary:", summary_file, "\n")
-  cat("Report:", report_file, "\n\n")
+  cat("Genes without primers:", fasta_without_file, "\n\n")
 
   if (length(all_amplicons) > 0) {
-    cat("=== DETAILS OF FOUND AMPLİCONS ===\n")
+    cat("=== DETAILS OF FOUND AMPLICONS ===\n")
     for (i in seq_along(all_amplicons)) {
       amp <- all_amplicons[[i]]
       cat("Amplicon", i, ":\n")
