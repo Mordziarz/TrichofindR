@@ -136,6 +136,7 @@ analyze_trichoderma_genome <- function(genome_file,
 #' @param verbose A logical value. If `TRUE`, prints detailed information about the analysis. Defaults to `TRUE`.
 #'
 #' @return A list of lists, where each sublist contains detailed information for a found amplicon.
+
 analyze_single_contig <- function(sequence, contig_name,
                                   forward_primers, reverse_primers,
                                   max_mismatch = 1,
