@@ -7,15 +7,10 @@
 
 You will find the results of the analysis in the specified output directory. The following files will be generated:
 
-    ANALYSIS_REPORT.txt: A final report summarizing the analysis.
-
-    contig_statistics.csv: A CSV file with statistics on amplicons found per contig.
-
     amplicons_with_primers.fasta: A FASTA file containing all found amplicon sequences, including the primer regions.
 
-    genes_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
+    amplicons_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
 
-    all_amplicons_summary.csv: A detailed CSV summary of all identified amplicons.
 
 # Installation
 
