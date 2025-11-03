@@ -130,9 +130,5 @@ trichoderma_blast <- function(query_sequence = "",
 
   blast_result <- predict(blast_db, query_sequences)
 
-  blast_result$pident <- as.numeric(blast_result$pident)
-
-  blast_result <- blast_result[order(blast_result$pident, decreasing = TRUE), ]
-
   return(blast_result)
 }
