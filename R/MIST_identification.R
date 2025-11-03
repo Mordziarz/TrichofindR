@@ -247,25 +247,35 @@ MIST_identification <- function(
   cat("\n--- Stage 3 Results (ITS) ---\n")
   print(stage3_results[, c("sseqid", "pident", "length")])
   
-  cat("\n========== Final Identification ==========\n")
+cat("\n========== Final Identification ==========\n")
+
+if (nrow(stage3_results) > 0) {
+  high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
   
-  if (nrow(stage3_results) > 0) {
-    best_match <- stage3_results[1, ]
-    mist_results$final_identification <- paste(
-      "Best match:",
-      best_match$sseqid,
-      "| Identity:",
-      round(best_match$pident, 2),
-      "% | E-value:",
-      best_match$evalue
-    )
-    cat(mist_results$final_identification, "\n")
+  if (nrow(high_confidence_results) > 0) {
+    cat("High confidence matches (≥99% identity):\n\n")
+    
+    for (i in seq_len(nrow(high_confidence_results))) {
+      match <- high_confidence_results[i, ]
+      cat("  ", i, ". ", match$sseqid, 
+          " | Identity: ", round(match$pident, 2), "%",
+          " | E-value: ", match$evalue,
+          " | Length: ", match$length, " bp\n", sep = "")
+    }
+    
+    mist_results$final_identification <- high_confidence_results
+    
   } else {
-    mist_results$final_identification <- "No reliable Trichoderma identification found"
-    cat(mist_results$final_identification, "\n")
+    mist_results$final_identification <- "No reliable Trichoderma identification found (no matches ≥99%)"
+    cat("⚠ No matches with ≥99% identity found.\n")
   }
   
-  cat("\n==================================================\n\n")
-  
+} else {
+  mist_results$final_identification <- "No reliable Trichoderma identification found"
+  cat(mist_results$final_identification, "\n")
+}
+
+cat("\n==================================================\n\n")
+
   return(mist_results)
 }
