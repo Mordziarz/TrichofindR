@@ -257,10 +257,7 @@ if (nrow(stage3_results) > 0) {
     
     for (i in seq_len(nrow(high_confidence_results))) {
       match <- high_confidence_results[i, ]
-      cat("  ", i, ". ", match$sseqid, 
-          " | Identity: ", round(match$pident, 2), "%",
-          " | E-value: ", match$evalue,
-          " | Length: ", match$length, " bp\n", sep = "")
+      cat("  ", i, ". ", match$sseqid)
     }
     
     mist_results$final_identification <- high_confidence_results
