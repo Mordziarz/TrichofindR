@@ -291,7 +291,7 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
   names(sequences_without_primers) <- headers_without_primers
 
   fasta_with_file <- file.path(output_dir, "amplicons_with_primers.fasta")
-  fasta_without_file <- file.path(output_dir, "genes_without_primers.fasta")
+  fasta_without_file <- file.path(output_dir, "amplicons_without_primers.fasta")
 
   writeXStringSet(sequences_with_primers, fasta_with_file)
   writeXStringSet(sequences_without_primers, fasta_without_file)
@@ -299,7 +299,7 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
   cat("=== RESULTS SAVED ===\n")
   cat("Output folder:", output_dir, "\n")
   cat("Amplicons with primers:", fasta_with_file, "\n")
-  cat("Genes without primers:", fasta_without_file, "\n\n")
+  cat("Amplicons without primers:", fasta_without_file, "\n\n")
 
   if (length(all_amplicons) > 0) {
     cat("=== DETAILS OF FOUND AMPLICONS ===\n")
