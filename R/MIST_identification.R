@@ -250,10 +250,10 @@ MIST_identification <- function(
   cat("\n========== Final Identification ==========\n")
   
   if (nrow(stage3_results) > 0) {
-    best_match <- stage3_results[, c("sseqid")]
+    best_match <- stage3_results[1, ]
     mist_results$final_identification <- paste(
       "Best match:",
-      best_match,
+      best_match$sseqid,
       "| Identity:",
       round(best_match$pident, 2),
       "% | E-value:",
