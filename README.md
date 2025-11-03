@@ -88,9 +88,6 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
 ```
 
-
-We plan to continue developing and improving this program in the future.
-
 # Automatic MIST identification
 
 I created an automatic MIST identification system where users don't have to manually click through FASTA sequences—they simply upload their genome.
