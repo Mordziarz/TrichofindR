@@ -1,30 +1,50 @@
-#' Analyzes a genome for target amplicons using primer pairs.
+#' Analyze genome for target amplicons using primer pairs
 #'
-#' This function takes a genome file (e.g., in FASTA format) and a set of
-#' forward and reverse primers to search for potential amplicons. It processes
-#' each contig, calls `analyze_single_contig` to find matches, and then
-#' summarizes and saves the results.
+#' Searches a genome file in FASTA format for potential amplicons using sets of
+#' forward and reverse primers. Processes each contig, identifies primer matches,
+#' and generates amplicon sequences with quality metrics. Results can be filtered
+#' to include only the first contig with matches or all contigs in the genome.
 #'
-#' @param genome_file A character string specifying the path to the genome file (e.g., a FASTA file).
-#' @param forward_primers A character vector of forward primer sequences.
-#' @param reverse_primers A character vector of reverse primer sequences.
-#' @param max_mismatch An integer specifying the maximum number of mismatches allowed for primer binding. Defaults to 1.
-#' @param max_amplicon_length An integer specifying the maximum allowed length of the amplicon (including primers). Defaults to 5000.
-#' @param min_amplicon_length An integer specifying the minimum allowed length of the amplicon (including primers). Defaults to 100.
-#' @param output_dir A character string specifying the directory to save the output files. Defaults to "contigs_results".
-#' @param all A logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
+#' @param genome_file Character string specifying path to genome FASTA file.
+#' @param forward_primers Character vector of forward primer sequences.
+#' @param reverse_primers Character vector of reverse primer sequences.
+#' @param max_mismatch Integer specifying maximum mismatches for primer binding.
+#'   Defaults to 1.
+#' @param max_amplicon_length Integer specifying maximum amplicon length including
+#'   primers. Defaults to 5000.
+#' @param min_amplicon_length Integer specifying minimum amplicon length including
+#'   primers. Defaults to 100.
+#' @param output_dir Character string specifying output directory for results.
+#'   Defaults to "contigs_results". Directory is created if it does not exist.
+#' @param all Logical. If TRUE processes all contigs in genome. If FALSE stops after
+#'   first contig with successful amplicon match. Defaults to FALSE.
 #'
-#' @return A list of lists, where each sublist contains details about the found amplicons.
+#' @return List of lists containing details for all found amplicons. Each amplicon
+#'   entry includes contig name, primer sequences, amplicon coordinates, length,
+#'   GC content, and sequence data.
+#'
 #' @examples
+#' \dontrun{
+#' forward_primers <- c("CGGTTACCAAAACCGGCGTAGAAAGGACCGCCGT")
+#' reverse_primers <- c("ACACCGTCCCCTTCTATGCCGGTTTTGGCAACCG")
+#' results <- analyze_trichoderma_genome(
+#'   genome_file = "genome.fasta",
+#'   forward_primers = forward_primers,
+#'   reverse_primers = reverse_primers,
+#'   all = TRUE
+#' )
+#' }
+#'
+#' @export
 
 analyze_trichoderma_genome <- function(genome_file,
-                                         forward_primers = c(TEF1),
-                                         reverse_primers = c(TEF1),
-                                         max_mismatch = 1,
-                                         max_amplicon_length = 5000,
-                                         min_amplicon_length = 100,
-                                         output_dir = "contigs_results",
-                                         all=FALSE) {
+                                       forward_primers,
+                                       reverse_primers,
+                                       max_mismatch = 1,
+                                       max_amplicon_length = 5000,
+                                       min_amplicon_length = 100,
+                                       output_dir = "contigs_results",
+                                       all = FALSE) {
 
   cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS ===\n")
   cat("Genome file:", genome_file, "\n")
@@ -91,8 +111,8 @@ analyze_trichoderma_genome <- function(genome_file,
 
       cat("*** FOUND", length(contig_results), "amplicons in contig:", contig_name, "***\n")
 
-      if(all==FALSE){
-      break
+      if (all == FALSE) {
+        break
       }
     }
   }
@@ -108,7 +128,7 @@ analyze_trichoderma_genome <- function(genome_file,
       cat("  ", contig_name, ":", length(all_results[[contig_name]]), "amplicons\n")
     }
 
-    save_contig_results(all_results, output_dir, genome_file)
+    save_contig_results(all_results, output_dir, genome_file, all = all)
   } else {
     cat("\nNo amplicons found in the entire genome.\n")
     cat("Please check:\n")
@@ -120,22 +140,25 @@ analyze_trichoderma_genome <- function(genome_file,
   return(all_results)
 }
 
-#' Analyzes a single contig for amplicons.
+
+#' Analyze single contig for amplicons
 #'
-#' This is a helper function that takes a single DNA sequence (a contig) and searches
-#' for all possible amplicons formed by the provided primer pairs. It considers
-#' mismatches and filters amplicons based on length criteria.
+#' Helper function that searches a single DNA sequence for all possible amplicons
+#' formed by provided primer pairs. Identifies primer matches using pattern matching
+#' with tolerance for mismatches, then filters amplicons by length criteria.
 #'
-#' @param sequence A `DNAString` object representing the contig to be analyzed.
-#' @param contig_name A character string with the name of the contig.
-#' @param forward_primers A character vector of forward primer sequences.
-#' @param reverse_primers A character vector of reverse primer sequences.
-#' @param max_mismatch An integer for the maximum number of mismatches. Defaults to 1.
-#' @param max_amplicon_length An integer for the maximum amplicon length. Defaults to 5000.
-#' @param min_amplicon_length An integer for the minimum amplicon length. Defaults to 100.
-#' @param verbose A logical value. If `TRUE`, prints detailed information about the analysis. Defaults to `TRUE`.
+#' @param sequence DNAString object representing contig to analyze.
+#' @param contig_name Character string with contig identifier.
+#' @param forward_primers Character vector of forward primer sequences.
+#' @param reverse_primers Character vector of reverse primer sequences.
+#' @param max_mismatch Integer for maximum allowed mismatches. Defaults to 1.
+#' @param max_amplicon_length Integer for maximum amplicon length. Defaults to 5000.
+#' @param min_amplicon_length Integer for minimum amplicon length. Defaults to 100.
+#' @param verbose Logical. If TRUE prints detailed analysis information. Defaults to TRUE.
 #'
-#' @return A list of lists, where each sublist contains detailed information for a found amplicon.
+#' @return List of lists where each entry contains detailed amplicon information
+#'   including coordinates, primer sequences, length metrics, and GC content.
+#'
 
 analyze_single_contig <- function(sequence, contig_name,
                                   forward_primers, reverse_primers,
@@ -230,27 +253,41 @@ analyze_single_contig <- function(sequence, contig_name,
   return(amplicons)
 }
 
-#' Saves amplicon analysis results to files.
-#'
-#' This helper function takes the results from `analyze_trichoderma_genome` and
-#' writes them to various output files, including FASTA files for amplicons,
-#' a detailed CSV summary, and a text report.
-#'
-#' @param all_results A list of lists containing all found amplicons from the genome analysis.
-#' @param output_dir A character string specifying the directory to save the output files.
-#' @param genome_file A character string with the path to the original genome file, used for reporting.
-#'
-#' @return NULL. The function saves files to the specified directory and prints a summary.
 
-save_contig_results <- function(all_results, output_dir, genome_file) {
+#' Save amplicon analysis results to files
+#'
+#' Processes amplicon analysis results and writes them to FASTA format files.
+#' Generates two output files: one containing complete amplicons with primers,
+#' and another containing gene sequences without primers. Optionally filters
+#' duplicate amplicons based on genomic coordinates.
+#'
+#' @param all_results List of lists containing amplicons from genome analysis.
+#'   Each entry corresponds to a contig containing amplicon data.
+#' @param output_dir Character string specifying directory for output files.
+#'   Creates directory if it does not exist.
+#' @param genome_file Character string with path to original genome file.
+#'   Used for documentation and reporting purposes.
+#' @param all Logical. If TRUE retains all amplicons. If FALSE removes duplicates
+#'   with identical genomic coordinates. Defaults to FALSE.
+#'
+#' @return Invisible NULL. Function is called for side effects of writing files
+#'   to disk and printing summary information to console.
+#'
+
+save_contig_results <- function(all_results, output_dir, genome_file, all = FALSE) {
 
   all_amplicons <- unlist(all_results, recursive = FALSE)
 
-  coords <- vapply(all_amplicons,
-                   function(x) paste(x$contig_name, x$fwd_start, x$rev_end, sep = "_"),
-                   character(1))
-  unique_indices <- !duplicated(coords)
-  all_amplicons <- all_amplicons[unique_indices]
+  if (all == FALSE) {
+    coords <- vapply(all_amplicons,
+                     function(x) paste(x$contig_name, x$fwd_start, x$rev_end, sep = "_"),
+                     character(1))
+    unique_indices <- !duplicated(coords)
+    all_amplicons <- all_amplicons[unique_indices]
+    cat("Removing duplicates (all=FALSE)...\n")
+  } else {
+    cat("Keeping all amplicons (all=TRUE)...\n")
+  }
 
   cat("\nSaving results...\n")
 
@@ -299,7 +336,8 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
   cat("=== RESULTS SAVED ===\n")
   cat("Output folder:", output_dir, "\n")
   cat("Amplicons with primers:", fasta_with_file, "\n")
-  cat("Amplicons without primers:", fasta_without_file, "\n\n")
+  cat("Amplicons without primers:", fasta_without_file, "\n")
+  cat("Total amplicons saved:", length(all_amplicons), "\n\n")
 
   if (length(all_amplicons) > 0) {
     cat("=== DETAILS OF FOUND AMPLICONS ===\n")
@@ -317,4 +355,6 @@ save_contig_results <- function(all_results, output_dir, genome_file) {
       cat("   ", gene_preview, "\n\n")
     }
   }
+
+  invisible(NULL)
 }
