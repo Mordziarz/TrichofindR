@@ -36,7 +36,6 @@
 #' }
 #'
 #' @export
-
 analyze_trichoderma_genome <- function(genome_file,
                                        forward_primers,
                                        reverse_primers,
@@ -159,7 +158,7 @@ analyze_trichoderma_genome <- function(genome_file,
 #' @return List of lists where each entry contains detailed amplicon information
 #'   including coordinates, primer sequences, length metrics, and GC content.
 #'
-
+#' @keywords internal
 analyze_single_contig <- function(sequence, contig_name,
                                   forward_primers, reverse_primers,
                                   max_mismatch = 1,
@@ -273,7 +272,7 @@ analyze_single_contig <- function(sequence, contig_name,
 #' @return Invisible NULL. Function is called for side effects of writing files
 #'   to disk and printing summary information to console.
 #'
-
+#' @keywords internal
 save_contig_results <- function(all_results, output_dir, genome_file, all = FALSE) {
 
   all_amplicons <- unlist(all_results, recursive = FALSE)
