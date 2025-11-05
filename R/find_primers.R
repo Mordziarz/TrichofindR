@@ -20,8 +20,6 @@
 #'   first contig with successful amplicon match. Defaults to FALSE.
 #' @param min_contig_length Integer specifying minimum contig length to process.
 #'   Contigs shorter than this are skipped. Defaults to 1000.
-#' @param n_cores Integer specifying number of cores for parallel processing.
-#'   If > 1, uses parallel processing. Defaults to 1 (no parallelization).
 #'
 #' @return List of lists containing details for all unique found amplicons. Each amplicon
 #'   entry includes contig name, primer sequences, amplicon coordinates, length,
@@ -35,8 +33,7 @@
 #'   genome_file = "genome.fasta",
 #'   forward_primers = forward_primers,
 #'   reverse_primers = reverse_primers,
-#'   all = TRUE,
-#'   n_cores = 4
+#'   all = TRUE
 #' )
 #' }
 #'
@@ -49,12 +46,10 @@ analyze_trichoderma_genome <- function(genome_file,
                                        min_amplicon_length = 100,
                                        output_dir = "contigs_results",
                                        all = FALSE,
-                                       min_contig_length = 1000,
-                                       n_cores = 1) {
+                                       min_contig_length = 1000) {
 
   cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS (OPTIMIZED) ===\n")
   cat("Genome file:", genome_file, "\n")
-  cat("Number of cores:", n_cores, "\n")
 
   cat("\nLoading all contigs...\n")
   genome_seqs <- readDNAStringSet(genome_file)
@@ -204,10 +199,6 @@ analyze_single_contig <- function(sequence, contig_name,
   amplicons <- list()
   amplicon_signatures <- character()
   amplicon_count <- 0
-
-  seq_length <- length(sequence)
-
-  rev_primer_rc <- reverseComplement(DNAString(rev_primers[1]))
 
   for (i in seq_along(forward_primers)) {
     fwd_primer <- forward_primers[i]
