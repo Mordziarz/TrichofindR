@@ -19,8 +19,9 @@
 #'     filtering criteria as Stage 1.
 #'
 #'   \item \strong{Stage 3 - ITS}: Analyzes the Internal Transcribed Spacer region.
-#'     Uses RPB2-filtered reference database. Applies strict filtering (>99% identity)
-#'     for final species confirmation.
+#'     Uses RPB2-filtered reference database. Applies adaptive filtering: initially filters
+#'     for >95% identity. If more than 2 results are found, applies stricter 99% threshold.
+#'     If 2 or fewer results, keeps the 95% matches for broader identification.
 #' }
 #'
 #' This hierarchical approach combines the discriminatory power of multiple genes while
@@ -50,12 +51,12 @@
 #' @param rpb2_threshold Numeric specifying the percent identity threshold for RPB2 results.
 #'   Defaults to \code{95}. Same filtering logic as TEF1.
 #'
-#' @param its_threshold Numeric specifying the percent identity threshold for ITS results.
-#'   Defaults to \code{99}. Stricter threshold for final species confirmation.
+#' @param its_primary_threshold Numeric specifying the initial percent identity threshold for ITS results.
+#'   Defaults to \code{95}. Used for primary filtering in Stage 3.
 #'
-#' @param its_secondary_threshold Numeric specifying the percent identity threshold when
-#'   ITS results above \code{its_threshold} are found. Defaults to \code{99}. Applied as
-#'   additional filter for high-confidence identifications.
+#' @param its_secondary_threshold Numeric specifying the stricter percent identity threshold applied
+#'   when more than 2 results are found at primary threshold. Defaults to \code{99}. Provides
+#'   high-confidence identifications when multiple candidates remain.
 #'
 #' @return
 #' A list containing results from all three identification stages:
@@ -91,8 +92,9 @@
 #' @importFrom rBLAST predict
 #' @export
 #'
-#' @author Your Name
+#' @author Mateusz Mazdziarz
 #' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 ITS phylogenetics
+
 
 MIST_identification <- function(
     genome_path = "path_to_genome",
@@ -101,7 +103,7 @@ MIST_identification <- function(
     max_amplicon_length = 5000,
     tef1_threshold = 95,
     rpb2_threshold = 95,
-    its_threshold = 99,
+    its_primary_threshold = 95,
     its_secondary_threshold = 99) {
   
   if (!file.exists(genome_path)) {
@@ -130,6 +132,7 @@ MIST_identification <- function(
     output_dir = "TEF1_results",
     all = FALSE
   )
+
 
   stage1_results <- trichoderma_blast(
     query_sequence = "TEF1_results/amplicons_with_primers.fasta",
@@ -227,18 +230,31 @@ MIST_identification <- function(
   )
   
   if (nrow(stage3_results) > 0) {
-    high_identity_its <- stage3_results[stage3_results$pident > its_threshold, ]
+    # Primary filtering at its_primary_threshold (95%)
+    high_identity_its <- stage3_results[stage3_results$pident > its_primary_threshold, ]
     
     if (nrow(high_identity_its) > 0) {
-      stage3_results <- high_identity_its[high_identity_its$pident > its_secondary_threshold, ]
+      cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% identity\n")
       
-      if (nrow(stage3_results) == 0) {
+      # Adaptive secondary filtering: if more than 2 results, apply stricter threshold
+      if (nrow(high_identity_its) > 2) {
+        cat("  → More than 2 results found. Applying stricter threshold (>", its_secondary_threshold, "%)...\n")
+        stage3_results <- high_identity_its[high_identity_its$pident > its_secondary_threshold, ]
+        
+        # If secondary threshold eliminates all results, fall back to primary threshold results
+        if (nrow(stage3_results) == 0) {
+          cat("  → No results at", its_secondary_threshold, "% threshold. Keeping", nrow(high_identity_its), "matches at", its_primary_threshold, "%.\n")
+          stage3_results <- high_identity_its
+        } else {
+          cat("  → Retained", nrow(stage3_results), "matches at", its_secondary_threshold, "% identity\n")
+        }
+      } else {
+        cat("  → ", nrow(high_identity_its), "result(s) found. Keeping at", its_primary_threshold, "% threshold.\n")
         stage3_results <- high_identity_its
       }
-      cat("✓ Found", nrow(stage3_results), "matches with >", its_threshold, "% identity\n")
     } else {
+      cat("⚠ No matches above", its_primary_threshold, "% identity. Keeping top 5 best matches.\n")
       stage3_results <- stage3_results[1:min(5, nrow(stage3_results)), ]
-      cat("⚠ No matches above", its_threshold, "% identity. Keeping top 5 best matches.\n")
     }
   }
   
@@ -247,32 +263,38 @@ MIST_identification <- function(
   cat("\n--- Stage 3 Results (ITS) ---\n")
   print(stage3_results[, c("sseqid", "pident", "length")])
   
-cat("\n========== Final Identification ==========\n")
+  cat("\n========== Final Identification ==========\n")
 
-if (nrow(stage3_results) > 0) {
-  high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
-  
-  if (nrow(high_confidence_results) > 0) {
-    cat("High confidence matches (≥99% identity):\n\n")
+  if (nrow(stage3_results) > 0) {
+    high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
     
-    for (i in seq_len(nrow(high_confidence_results))) {
-      match <- high_confidence_results[i, ]
-      cat("  ", i, ". ", match$sseqid)
+    if (nrow(high_confidence_results) > 0) {
+      cat("High confidence matches (≥99% identity):\n\n")
+      
+      for (i in seq_len(nrow(high_confidence_results))) {
+        match <- high_confidence_results[i, ]
+        cat("  ", i, ". ", match$sseqid, " (", match$pident, "% identity)\n")
+      }
+      
+      mist_results$final_identification <- high_confidence_results
+      
+    } else {
+      cat("Probable matches (≥", its_primary_threshold, "% identity):\n\n")
+      
+      for (i in seq_len(nrow(stage3_results))) {
+        match <- stage3_results[i, ]
+        cat("  ", i, ". ", match$sseqid, " (", match$pident, "% identity)\n")
+      }
+      
+      mist_results$final_identification <- stage3_results
     }
     
-    mist_results$final_identification <- high_confidence_results
-    
   } else {
-    mist_results$final_identification <- "No reliable Trichoderma identification found (no matches ≥99%)"
-    cat("⚠ No matches with ≥99% identity found.\n")
+    mist_results$final_identification <- "No reliable Trichoderma identification found"
+    cat(mist_results$final_identification, "\n")
   }
-  
-} else {
-  mist_results$final_identification <- "No reliable Trichoderma identification found"
-  cat(mist_results$final_identification, "\n")
-}
 
-cat("\n==================================================\n\n")
+  cat("\n==================================================\n\n")
 
   return(mist_results)
 }
