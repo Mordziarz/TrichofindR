@@ -1,4 +1,4 @@
-#' Analyze genome for target amplicons using primer pairs (optimized)
+#' Analyze genome for target amplicons using primer pairs (optimized - FINAL FIXED)
 #'
 #' Searches a genome file in FASTA format for potential amplicons using sets of
 #' forward and reverse primers. Processes each contig, identifies primer matches,
@@ -48,20 +48,17 @@ analyze_trichoderma_genome <- function(genome_file,
                                        all = FALSE,
                                        min_contig_length = 1000) {
 
-
-  cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS (OPTIMIZED) ===\n")
+  cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS (OPTIMIZED - FINAL FIXED) ===\n")
   cat("Genome file:", genome_file, "\n")
-
 
   cat("\nLoading all contigs...\n")
   genome_seqs <- readDNAStringSet(genome_file)
-
+  
+  genome_seqs <- DNAStringSet(lapply(genome_seqs, function(x) DNAString(toupper(as.character(x)))))
 
   cat("Total number of contigs/sequences:", length(genome_seqs), "\n")
 
-
   contig_lengths <- width(genome_seqs)
-
 
   cat("Contig lengths:\n")
   cat("  Longest contig:", max(contig_lengths), "bp\n")
@@ -69,12 +66,10 @@ analyze_trichoderma_genome <- function(genome_file,
   cat("  Average length:", round(mean(contig_lengths), 0), "bp\n")
   cat("  Total genome length:", sum(contig_lengths), "bp\n")
 
-
   contigs_to_skip <- sum(contig_lengths < min_contig_length)
   if (contigs_to_skip > 0) {
     cat("  Contigs to skip (<", min_contig_length, "bp):", contigs_to_skip, "\n")
   }
-
 
   cat("\nFirst 10 contig names:\n")
   first_names <- names(genome_seqs)[1:min(10, length(genome_seqs))]
@@ -85,11 +80,9 @@ analyze_trichoderma_genome <- function(genome_file,
     cat("  ... and", length(genome_seqs) - 10, "more contigs\n")
   }
 
-
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
-
 
   all_results <- list()
   total_amplicons <- 0
@@ -97,12 +90,9 @@ analyze_trichoderma_genome <- function(genome_file,
   contigs_with_hits <- 0
   skipped_contigs <- 0
 
-
   cat("\n=== STARTING CONTIG ANALYSIS ===\n")
 
-
   start_time <- Sys.time()
-
 
   for (i in seq_along(genome_seqs)) {
     contig_name <- names(genome_seqs)[i]
@@ -110,24 +100,19 @@ analyze_trichoderma_genome <- function(genome_file,
       contig_name <- paste0("contig_", i)
     }
 
-
     contig_length <- contig_lengths[i]
-
 
     if (contig_length < min_contig_length) {
       skipped_contigs <- skipped_contigs + 1
       next
     }
 
-
     processed_contigs <- processed_contigs + 1
-
 
     if (processed_contigs %% 100 == 0 || processed_contigs == sum(contig_lengths >= min_contig_length)) {
       elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
       cat("Processed", processed_contigs, "contigs (", round(elapsed, 1), "s)...\n")
     }
-
 
     contig_results <- analyze_single_contig(
       sequence = genome_seqs[[i]],
@@ -140,15 +125,12 @@ analyze_trichoderma_genome <- function(genome_file,
       verbose = FALSE
     )
 
-
     if (length(contig_results) > 0) {
       all_results[[contig_name]] <- contig_results
       total_amplicons <- total_amplicons + length(contig_results)
       contigs_with_hits <- contigs_with_hits + 1
 
-
       cat("*** FOUND", length(contig_results), "amplicons in contig:", contig_name, "***\n")
-
 
       if (all == FALSE) {
         break
@@ -156,9 +138,7 @@ analyze_trichoderma_genome <- function(genome_file,
     }
   }
 
-
   elapsed_total <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-
 
   cat("\n=== GENOME ANALYSIS SUMMARY ===\n")
   cat("Contigs processed:", processed_contigs, "\n")
@@ -167,13 +147,11 @@ analyze_trichoderma_genome <- function(genome_file,
   cat("Total number of amplicons found:", total_amplicons, "\n")
   cat("Total time elapsed:", round(elapsed_total, 2), "seconds\n")
 
-
   if (total_amplicons > 0) {
     cat("\nContigs with amplicons:\n")
     for (contig_name in names(all_results)) {
       cat("  ", contig_name, ":", length(all_results[[contig_name]]), "amplicons\n")
     }
-
 
     save_contig_results(all_results, output_dir, genome_file, all = all)
   } else {
@@ -184,18 +162,17 @@ analyze_trichoderma_genome <- function(genome_file,
     cat("  - If the gene is actually present in this genome\n")
   }
 
-
   return(all_results)
 }
 
 
 
-#' Analyze single contig for amplicons (optimized)
+
+#' Analyze single contig for amplicons (optimized - FINAL FIXED)
 #'
 #' Helper function that searches a single DNA sequence for all possible amplicons
-#' formed by provided primer pairs. Optimized with early termination and cached
-#' reverse complements. Duplicate amplicons with identical coordinates and sequences
-#' are removed.
+#' formed by provided primer pairs. Handles all primer orientations on both strands.
+#' Duplicate amplicons with identical coordinates and sequences are removed.
 #'
 #' @param sequence DNAString object representing contig to analyze.
 #' @param contig_name Character string with contig identifier.
@@ -226,95 +203,64 @@ analyze_single_contig <- function(sequence, contig_name,
     cat("Length:", length(sequence), "bp\n")
   }
 
-
   amplicons <- list()
   amplicon_signatures <- character()
   amplicon_count <- 0
 
-
   for (i in seq_along(forward_primers)) {
     fwd_primer <- forward_primers[i]
 
-
     fwd_matches <- matchPattern(fwd_primer, sequence, max.mismatch = max_mismatch)
-
     fwd_primer_rc <- as.character(reverseComplement(DNAString(fwd_primer)))
     fwd_matches_rc <- matchPattern(fwd_primer_rc, sequence, max.mismatch = max_mismatch)
 
-
     if (length(fwd_matches) == 0 && length(fwd_matches_rc) == 0) next
-
 
     for (j in seq_along(reverse_primers)) {
       rev_primer <- reverse_primers[j]
 
+      rev_primer_rc <- as.character(reverseComplement(DNAString(rev_primer)))
+      rev_matches_rc <- matchPattern(rev_primer_rc, sequence, max.mismatch = max_mismatch)
+      
+      rev_matches_direct <- matchPattern(rev_primer, sequence, max.mismatch = max_mismatch)
 
-      rev_primer_rc <- reverseComplement(DNAString(rev_primer))
-      rev_matches <- matchPattern(rev_primer_rc, sequence, max.mismatch = max_mismatch)
+      if (length(rev_matches_rc) == 0 && length(rev_matches_direct) == 0) next
 
-
-      if (length(rev_matches) == 0) next
-
-
-      if (verbose && (length(fwd_matches) > 0 || length(fwd_matches_rc) > 0) && length(rev_matches) > 0) {
-        cat("Primer pair", i, "x", j, "- Forward:", length(fwd_matches) + length(fwd_matches_rc),
-            "| Reverse:", length(rev_matches), "\n")
+      if (verbose && (length(fwd_matches) > 0 || length(fwd_matches_rc) > 0) && 
+          (length(rev_matches_rc) > 0 || length(rev_matches_direct) > 0)) {
+        cat("Primer pair", i, "x", j, "- FWD:", length(fwd_matches) + length(fwd_matches_rc),
+            "| REV:", length(rev_matches_rc) + length(rev_matches_direct), "\n")
       }
 
-      # Kombinacja: fwd_matches + rev_matches
-      if (length(fwd_matches) > 0) {
+      if (length(fwd_matches) > 0 && length(rev_matches_rc) > 0) {
         for (f in seq_along(fwd_matches)) {
           fwd_start <- start(fwd_matches[f])
           fwd_end <- end(fwd_matches[f])
 
-
-          for (r in seq_along(rev_matches)) {
-            rev_start <- start(rev_matches[r])
-            rev_end <- end(rev_matches[r])
-
+          for (r in seq_along(rev_matches_rc)) {
+            rev_start <- start(rev_matches_rc[r])
+            rev_end <- end(rev_matches_rc[r])
 
             if (rev_start <= fwd_end) next
 
-
             amplicon_length <- rev_end - fwd_start + 1
-
-
             if (amplicon_length > max_amplicon_length) next
-
-
             if (amplicon_length < min_amplicon_length) next
 
-
             gene_length <- rev_start - fwd_end - 1
-
-
             if (gene_length < 50) next
 
-
             amplicon_with_primers <- subseq(sequence, fwd_start, rev_end)
+            amplicon_signature <- paste(fwd_start, rev_end, as.character(amplicon_with_primers), sep = "___")
 
-
-            amplicon_signature <- paste(
-              fwd_start,
-              rev_end,
-              as.character(amplicon_with_primers),
-              sep = "___"
-            )
-
-
-            if (amplicon_signature %in% amplicon_signatures) {
-              next
-            }
-
+            if (amplicon_signature %in% amplicon_signatures) next
 
             amplicon_count <- amplicon_count + 1
             amplicon_without_primers <- subseq(sequence, fwd_end + 1, rev_start - 1)
 
-
             gene_seq_str <- as.character(amplicon_without_primers)
             gc_count <- sum(strsplit(gene_seq_str, "")[[1]] %in% c("G", "C"))
             gc_content <- (gc_count / nchar(gene_seq_str)) * 100
-
 
             amplicon_info <- list(
               contig_name = contig_name,
@@ -332,13 +278,11 @@ analyze_single_contig <- function(sequence, contig_name,
               amplicon_without_primers = amplicon_without_primers
             )
 
-
             amplicons[[amplicon_count]] <- amplicon_info
             amplicon_signatures[amplicon_count] <- amplicon_signature
 
-
             if (verbose) {
-              cat("  *** AMPLICON FOUND ***\n")
+              cat("  *** AMPLICON FOUND (fwd+rev_rc) ***\n")
               cat("  ID:", amplicon_info$amplicon_id, "\n")
               cat("  Amplicon:", amplicon_length, "bp | Gene:", gene_length, "bp\n")
               cat("  GC:", round(gc_content, 1), "% | Position:", fwd_start, "-", rev_end, "\n")
@@ -347,59 +291,94 @@ analyze_single_contig <- function(sequence, contig_name,
         }
       }
 
-      if (length(fwd_matches_rc) > 0) {
-        for (f in seq_along(fwd_matches_rc)) {
-          fwd_start <- start(fwd_matches_rc[f])
-          fwd_end <- end(fwd_matches_rc[f])
+      if (length(fwd_matches) > 0 && length(rev_matches_direct) > 0) {
+        for (f in seq_along(fwd_matches)) {
+          fwd_start <- start(fwd_matches[f])
+          fwd_end <- end(fwd_matches[f])
 
-
-          for (r in seq_along(rev_matches)) {
-            rev_start <- start(rev_matches[r])
-            rev_end <- end(rev_matches[r])
-
+          for (r in seq_along(rev_matches_direct)) {
+            rev_start <- start(rev_matches_direct[r])
+            rev_end <- end(rev_matches_direct[r])
 
             if (rev_start <= fwd_end) next
 
-
             amplicon_length <- rev_end - fwd_start + 1
-
-
             if (amplicon_length > max_amplicon_length) next
-
-
             if (amplicon_length < min_amplicon_length) next
 
-
             gene_length <- rev_start - fwd_end - 1
-
-
             if (gene_length < 50) next
 
-
             amplicon_with_primers <- subseq(sequence, fwd_start, rev_end)
+            amplicon_signature <- paste(fwd_start, rev_end, as.character(amplicon_with_primers), sep = "___")
 
-
-            amplicon_signature <- paste(
-              fwd_start,
-              rev_end,
-              as.character(amplicon_with_primers),
-              sep = "___"
-            )
-
-
-            if (amplicon_signature %in% amplicon_signatures) {
-              next
-            }
-
+            if (amplicon_signature %in% amplicon_signatures) next
 
             amplicon_count <- amplicon_count + 1
             amplicon_without_primers <- subseq(sequence, fwd_end + 1, rev_start - 1)
-
 
             gene_seq_str <- as.character(amplicon_without_primers)
             gc_count <- sum(strsplit(gene_seq_str, "")[[1]] %in% c("G", "C"))
             gc_content <- (gc_count / nchar(gene_seq_str)) * 100
 
+            amplicon_info <- list(
+              contig_name = contig_name,
+              amplicon_id = paste0(gsub("[^A-Za-z0-9]", "_", contig_name), "_amp", amplicon_count),
+              forward_primer = fwd_primer,
+              reverse_primer = rev_primer,
+              fwd_start = fwd_start,
+              fwd_end = fwd_end,
+              rev_start = rev_start,
+              rev_end = rev_end,
+              amplicon_length = amplicon_length,
+              gene_length = gene_length,
+              gc_content = gc_content,
+              amplicon_with_primers = amplicon_with_primers,
+              amplicon_without_primers = amplicon_without_primers
+            )
+
+            amplicons[[amplicon_count]] <- amplicon_info
+            amplicon_signatures[amplicon_count] <- amplicon_signature
+
+            if (verbose) {
+              cat("  *** AMPLICON FOUND (fwd+rev_direct) ***\n")
+              cat("  ID:", amplicon_info$amplicon_id, "\n")
+              cat("  Amplicon:", amplicon_length, "bp | Gene:", gene_length, "bp\n")
+              cat("  GC:", round(gc_content, 1), "% | Position:", fwd_start, "-", rev_end, "\n")
+            }
+          }
+        }
+      }
+
+      if (length(fwd_matches_rc) > 0 && length(rev_matches_rc) > 0) {
+        for (f in seq_along(fwd_matches_rc)) {
+          fwd_start <- start(fwd_matches_rc[f])
+          fwd_end <- end(fwd_matches_rc[f])
+
+          for (r in seq_along(rev_matches_rc)) {
+            rev_start <- start(rev_matches_rc[r])
+            rev_end <- end(rev_matches_rc[r])
+
+            if (rev_start <= fwd_end) next
+
+            amplicon_length <- rev_end - fwd_start + 1
+            if (amplicon_length > max_amplicon_length) next
+            if (amplicon_length < min_amplicon_length) next
+
+            gene_length <- rev_start - fwd_end - 1
+            if (gene_length < 50) next
+
+            amplicon_with_primers <- subseq(sequence, fwd_start, rev_end)
+            amplicon_signature <- paste(fwd_start, rev_end, as.character(amplicon_with_primers), sep = "___")
+
+            if (amplicon_signature %in% amplicon_signatures) next
+
+            amplicon_count <- amplicon_count + 1
+            amplicon_without_primers <- subseq(sequence, fwd_end + 1, rev_start - 1)
+
+            gene_seq_str <- as.character(amplicon_without_primers)
+            gc_count <- sum(strsplit(gene_seq_str, "")[[1]] %in% c("G", "C"))
+            gc_content <- (gc_count / nchar(gene_seq_str)) * 100
 
             amplicon_info <- list(
               contig_name = contig_name,
@@ -417,13 +396,70 @@ analyze_single_contig <- function(sequence, contig_name,
               amplicon_without_primers = amplicon_without_primers
             )
 
+            amplicons[[amplicon_count]] <- amplicon_info
+            amplicon_signatures[amplicon_count] <- amplicon_signature
+
+            if (verbose) {
+              cat("  *** AMPLICON FOUND (fwd_rc+rev_rc) ***\n")
+              cat("  ID:", amplicon_info$amplicon_id, "\n")
+              cat("  Amplicon:", amplicon_length, "bp | Gene:", gene_length, "bp\n")
+              cat("  GC:", round(gc_content, 1), "% | Position:", fwd_start, "-", rev_end, "\n")
+            }
+          }
+        }
+      }
+
+      if (length(fwd_matches_rc) > 0 && length(rev_matches_direct) > 0) {
+        for (f in seq_along(fwd_matches_rc)) {
+          fwd_start <- start(fwd_matches_rc[f])
+          fwd_end <- end(fwd_matches_rc[f])
+
+          for (r in seq_along(rev_matches_direct)) {
+            rev_start <- start(rev_matches_direct[r])
+            rev_end <- end(rev_matches_direct[r])
+
+            if (rev_start <= fwd_end) next
+
+            amplicon_length <- rev_end - fwd_start + 1
+            if (amplicon_length > max_amplicon_length) next
+            if (amplicon_length < min_amplicon_length) next
+
+            gene_length <- rev_start - fwd_end - 1
+            if (gene_length < 50) next
+
+            amplicon_with_primers <- subseq(sequence, fwd_start, rev_end)
+            amplicon_signature <- paste(fwd_start, rev_end, as.character(amplicon_with_primers), sep = "___")
+
+            if (amplicon_signature %in% amplicon_signatures) next
+
+            amplicon_count <- amplicon_count + 1
+            amplicon_without_primers <- subseq(sequence, fwd_end + 1, rev_start - 1)
+
+            gene_seq_str <- as.character(amplicon_without_primers)
+            gc_count <- sum(strsplit(gene_seq_str, "")[[1]] %in% c("G", "C"))
+            gc_content <- (gc_count / nchar(gene_seq_str)) * 100
+
+            amplicon_info <- list(
+              contig_name = contig_name,
+              amplicon_id = paste0(gsub("[^A-Za-z0-9]", "_", contig_name), "_amp", amplicon_count),
+              forward_primer = fwd_primer_rc,
+              reverse_primer = rev_primer,
+              fwd_start = fwd_start,
+              fwd_end = fwd_end,
+              rev_start = rev_start,
+              rev_end = rev_end,
+              amplicon_length = amplicon_length,
+              gene_length = gene_length,
+              gc_content = gc_content,
+              amplicon_with_primers = amplicon_with_primers,
+              amplicon_without_primers = amplicon_without_primers
+            )
 
             amplicons[[amplicon_count]] <- amplicon_info
             amplicon_signatures[amplicon_count] <- amplicon_signature
 
-
             if (verbose) {
-              cat("  *** AMPLICON FOUND (fwd RC) ***\n")
+              cat("  *** AMPLICON FOUND (fwd_rc+rev_direct) ***\n")
               cat("  ID:", amplicon_info$amplicon_id, "\n")
               cat("  Amplicon:", amplicon_length, "bp | Gene:", gene_length, "bp\n")
               cat("  GC:", round(gc_content, 1), "% | Position:", fwd_start, "-", rev_end, "\n")
@@ -434,9 +470,9 @@ analyze_single_contig <- function(sequence, contig_name,
     }
   }
 
-
   return(amplicons)
 }
+
 
 
 
@@ -457,9 +493,7 @@ analyze_single_contig <- function(sequence, contig_name,
 #' @keywords internal
 save_contig_results <- function(all_results, output_dir, genome_file, all = FALSE) {
 
-
   all_amplicons <- unlist(all_results, recursive = FALSE)
-
 
   if (all == FALSE) {
     coords <- vapply(all_amplicons,
@@ -472,21 +506,16 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
     cat("Keeping all amplicons (all=TRUE)...\n")
   }
 
-
   cat("\nSaving results...\n")
-
 
   seqs_with_primers <- list()
   headers_with_primers <- character()
 
-
   seqs_without_primers <- list()
   headers_without_primers <- character()
 
-
   for (i in seq_along(all_amplicons)) {
     amp <- all_amplicons[[i]]
-
 
     header_with <- paste0(amp$amplicon_id,
                           " | Contig:", amp$contig_name,
@@ -496,45 +525,36 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
                           " | Pos:", amp$fwd_start, "-", amp$rev_end,
                           " | WITH_PRIMERS")
 
-
     header_without <- paste0(amp$amplicon_id,
                              " | Contig:", amp$contig_name,
                              " | Gene:", amp$gene_length, "bp",
                              " | GC:", round(amp$gc_content, 1), "%",
                              " | GENE_ONLY")
 
-
     seqs_with_primers[[i]] <- amp$amplicon_with_primers
     headers_with_primers[i] <- header_with
-
 
     seqs_without_primers[[i]] <- amp$amplicon_without_primers
     headers_without_primers[i] <- header_without
   }
 
-
   sequences_with_primers <- DNAStringSet(seqs_with_primers)
   names(sequences_with_primers) <- headers_with_primers
-
 
   sequences_without_primers <- DNAStringSet(seqs_without_primers)
   names(sequences_without_primers) <- headers_without_primers
 
-
   fasta_with_file <- file.path(output_dir, "amplicons_with_primers.fasta")
   fasta_without_file <- file.path(output_dir, "amplicons_without_primers.fasta")
 
-
   writeXStringSet(sequences_with_primers, fasta_with_file)
   writeXStringSet(sequences_without_primers, fasta_without_file)
-
 
   cat("=== RESULTS SAVED ===\n")
   cat("Output folder:", output_dir, "\n")
   cat("Amplicons with primers:", fasta_with_file, "\n")
   cat("Amplicons without primers:", fasta_without_file, "\n")
   cat("Total amplicons saved:", length(all_amplicons), "\n\n")
-
 
   if (length(all_amplicons) > 0) {
     cat("=== DETAILS OF FOUND AMPLICONS ===\n")
@@ -552,7 +572,6 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
       cat("   ", gene_preview, "\n\n")
     }
   }
-
 
   invisible(NULL)
 }
