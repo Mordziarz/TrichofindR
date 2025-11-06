@@ -217,7 +217,6 @@ analyze_single_contig <- function(sequence, contig_name,
                                   min_amplicon_length = 100,
                                   verbose = TRUE) {
 
-  # POPRAWKA 1: Normalizacja wielkości liter
   sequence <- DNAString(toupper(as.character(sequence)))
   forward_primers <- toupper(forward_primers)
   reverse_primers <- toupper(reverse_primers)
@@ -239,7 +238,6 @@ analyze_single_contig <- function(sequence, contig_name,
 
     fwd_matches <- matchPattern(fwd_primer, sequence, max.mismatch = max_mismatch)
 
-    # POPRAWKA 2: Sprawdzenie reverse complement forward primeira
     fwd_primer_rc <- as.character(reverseComplement(DNAString(fwd_primer)))
     fwd_matches_rc <- matchPattern(fwd_primer_rc, sequence, max.mismatch = max_mismatch)
 
@@ -349,7 +347,6 @@ analyze_single_contig <- function(sequence, contig_name,
         }
       }
 
-      # Kombinacja: fwd_matches_rc + rev_matches
       if (length(fwd_matches_rc) > 0) {
         for (f in seq_along(fwd_matches_rc)) {
           fwd_start <- start(fwd_matches_rc[f])
