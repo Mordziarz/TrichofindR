@@ -260,38 +260,39 @@ MIST_identification <- function(
   cat("\n--- Stage 3 Results (ITS) ---\n")
   print(stage3_results[, c("sseqid", "pident", "length")])
   
-  cat("\n========== Final Identification ==========\n")
+cat("\n========== Final Identification ==========\n")
 
-  if (nrow(stage3_results) > 0) {
-    high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
+if (nrow(stage3_results) > 0) {
+  high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
+  
+  if (nrow(high_confidence_results) > 0) {
+    cat("High confidence matches:\n\n")
     
-    if (nrow(high_confidence_results) > 0) {
-      cat("High confidence matches:\n\n")
-      
-      for (i in seq_len(nrow(high_confidence_results))) {
-        match <- high_confidence_results[i, ]
-        cat("  ", i, ". ", match$sseqid, " (", match$pident, "% identity)\n")
-      }
-      
-      mist_results$final_identification <- high_confidence_results
-      
-    } else {
-      cat("Probable matches (≥", its_primary_threshold, "% identity):\n\n")
-      
-      for (i in seq_len(nrow(stage3_results))) {
-        match <- stage3_results[i, ]
-        cat("  ", i, ". ", match$sseqid, " (", match$pident, "% identity)\n")
-      }
-      
-      mist_results$final_identification <- stage3_results
+    for (i in seq_len(nrow(high_confidence_results))) {
+      match <- high_confidence_results[i, ]
+      cat("  ", i, ". ", match$sseqid, "\n")
     }
     
+    mist_results$final_identification <- high_confidence_results$sseqid
+    
   } else {
-    mist_results$final_identification <- "No reliable Trichoderma identification found"
-    cat(mist_results$final_identification, "\n")
+    cat("Probable matches:\n\n")
+    
+    for (i in seq_len(nrow(stage3_results))) {
+      match <- stage3_results[i, ]
+      cat("  ", i, ". ", match$sseqid, "\n")
+    }
+    
+    mist_results$final_identification <- stage3_results$sseqid
   }
+  
+} else {
+  mist_results$final_identification <- "No reliable Trichoderma identification found"
+  cat(mist_results$final_identification, "\n")
+}
 
-  cat("\n==================================================\n\n")
+cat("\n==================================================\n\n")
 
-  return(mist_results)
+return(mist_results)
+
 }
