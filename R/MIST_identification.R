@@ -230,18 +230,15 @@ MIST_identification <- function(
   )
   
   if (nrow(stage3_results) > 0) {
-    # Primary filtering at its_primary_threshold (95%)
     high_identity_its <- stage3_results[stage3_results$pident > its_primary_threshold, ]
     
     if (nrow(high_identity_its) > 0) {
       cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% identity\n")
       
-      # Adaptive secondary filtering: if more than 2 results, apply stricter threshold
       if (nrow(high_identity_its) > 2) {
         cat("  → More than 2 results found. Applying stricter threshold (>", its_secondary_threshold, "%)...\n")
         stage3_results <- high_identity_its[high_identity_its$pident > its_secondary_threshold, ]
         
-        # If secondary threshold eliminates all results, fall back to primary threshold results
         if (nrow(stage3_results) == 0) {
           cat("  → No results at", its_secondary_threshold, "% threshold. Keeping", nrow(high_identity_its), "matches at", its_primary_threshold, "%.\n")
           stage3_results <- high_identity_its
