@@ -269,7 +269,7 @@ MIST_identification <- function(
     high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
     
     if (nrow(high_confidence_results) > 0) {
-      cat("High confidence matches (≥99% identity):\n\n")
+      cat("High confidence matches:\n\n")
       
       for (i in seq_len(nrow(high_confidence_results))) {
         match <- high_confidence_results[i, ]
