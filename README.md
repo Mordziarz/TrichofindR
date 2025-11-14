@@ -98,7 +98,7 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
 
 # Automatic TEF1-RPB2-ITS identification
 
-I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ITS identification from FASTA sequences with a single-click upload.﻿
+I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ITS identification from FASTA sequence.
 
 ```r
 MIST_identification <- MIST_identification(genome_path = "your_genome_sequence.fasta")
@@ -108,3 +108,4 @@ MIST_identification$stage2_rpb2
 MIST_identification$stage3_its
 
 ```
+# Automatic 
