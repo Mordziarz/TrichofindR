@@ -63,6 +63,12 @@ results <- analyze_trichoderma_genome(
 )
 ```
 
+I created a function to identify 8 amplicons at once by providing only the path to the Trichoderma genome. The function automatically creates 8 folders in your working directory, each with a different gene.
+
+```r
+all_amplicon_identification(genome_file = "path/to/your/genome")
+```
+
 # BLAST against TrichofindR database
 
 The trichoderma_blast() function allows you to perform a BLAST search against a reference database defined in TrichofindR (the reference_sequences argument). Currently, the following reference databases are available:
