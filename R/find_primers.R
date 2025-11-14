@@ -747,7 +747,7 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
     dir.create(output_dir)
   }
   
-  concatenated_sequence <- Biostrings::DNAString()
+  concatenated_sequence <- ""
   locus_info <- character()
   total_bp <- 0
   
@@ -762,15 +762,16 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
           locus_name <- sub("_results", "", locus_folder)
           
           for (i in seq_along(sequences)) {
-            current_seq <- sequences[[i]]
-            concatenated_sequence <- Biostrings::xscat(concatenated_sequence, current_seq)
-            total_bp <- total_bp + Biostrings::width(current_seq)
+            current_seq <- as.character(sequences[[i]])
+            concatenated_sequence <- paste0(concatenated_sequence, current_seq)
+            seq_length <- nchar(current_seq)
+            total_bp <- total_bp + seq_length
             
-            locus_info <- c(locus_info, paste0(locus_name, "_", Biostrings::width(current_seq), "bp"))
+            locus_info <- c(locus_info, paste0(locus_name, "_", seq_length, "bp"))
           }
           
           message("Added ", length(sequences), " sequences from ", locus_folder, " (", 
-                  sum(Biostrings::width(sequences)), " bp total)")
+                  sum(nchar(as.character(sequences))), " bp total)")
         }
       }, error = function(e) {
         warning("Could not read FASTA from ", fasta_file, ": ", e$message)
@@ -780,11 +781,11 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
     }
   }
   
-  if (Biostrings::width(concatenated_sequence) > 0) {
+  if (nchar(concatenated_sequence) > 0) {
     header <- paste0("IMLDS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
                      paste(locus_info, collapse=" + "))
     
-    final_sequences <- Biostrings::DNAStringSet(concatenated_sequence)
+    final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
     
     output_fasta <- file.path(output_dir, "ultra.fasta")
