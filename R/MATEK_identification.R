@@ -1,4 +1,4 @@
-#' Multi-Marker Identification System for Trichoderma (MIST)
+#' Multi-Marker Identification System for Trichoderma (MATEK)
 #'
 #' @description
 #' Performs a sequential multi-gene BLAST identification pipeline for Trichoderma species.
@@ -8,7 +8,7 @@
 #' reducing computational burden.
 #'
 #' @details
-#' The MIST (Multi-marker Identification System for Trichoderma) function implements a
+#' The MATEK (Multi-marker Identification System for Trichoderma) function implements a
 #' three-stage identification workflow:
 #' \enumerate{
 #'   \item \strong{Stage 1 - TEF1}: Analyzes the translation elongation factor 1-alpha gene.
@@ -71,18 +71,18 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Run MIST identification pipeline on a genome file
-#' mist_results <- MIST_identification(
+#' # Run MATEK identification pipeline on a genome file
+#' MATEK_results <- MATEK_identification(
 #'   query_sequence = "~/Pobrane/24THUB.fasta"
 #' )
 #'
 #' # View results from each stage
-#' head(mist_results$stage1_tef1, 10)
-#' head(mist_results$stage2_rpb2, 10)
-#' head(mist_results$stage3_its, 10)
+#' head(MATEK_results$stage1_tef1, 10)
+#' head(MATEK_results$stage2_rpb2, 10)
+#' head(MATEK_results$stage3_its, 10)
 #'
 #' # Get final species identification
-#' mist_results$final_identification
+#' MATEK_results$final_identification
 #' }
 #'
 #' @seealso
@@ -96,7 +96,7 @@
 #' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 ITS phylogenetics
 
 
-MIST_identification <- function(
+MATEK_identification <- function(
     genome_path = "path_to_genome",
     max_mismatch = 1,
     min_amplicon_length = 100,
@@ -110,7 +110,7 @@ MIST_identification <- function(
     stop(paste("Genome file not found:", genome_path))
   }
   
-  mist_results <- list(
+  MATEK_results <- list(
     stage1_tef1 = NULL,
     stage2_rpb2 = NULL,
     stage3_its = NULL,
@@ -119,7 +119,7 @@ MIST_identification <- function(
     final_identification = NA
   )
   
-  cat("\n========== MIST Identification Pipeline ==========\n")
+  cat("\n========== MATEK Identification Pipeline ==========\n")
   cat("\n[STAGE 1] Analyzing TEF1 (Translation Elongation Factor 1-alpha)...\n")
   
   analyze_trichoderma_genome(
@@ -151,10 +151,10 @@ MIST_identification <- function(
     }
   }
   
-  mist_results$stage1_tef1 <- stage1_results
+  MATEK_results$stage1_tef1 <- stage1_results
   
   stage1_reference_ids <- unique(stage1_results$sseqid)
-  mist_results$stage1_reference_ids <- stage1_reference_ids
+  MATEK_results$stage1_reference_ids <- stage1_reference_ids
   
   cat("\n--- Stage 1 Results (TEF1) ---\n")
   print(stage1_results[, c("sseqid", "pident", "length")])
@@ -196,10 +196,10 @@ MIST_identification <- function(
     }
   }
   
-  mist_results$stage2_rpb2 <- stage2_results
+  MATEK_results$stage2_rpb2 <- stage2_results
   
   stage2_reference_ids <- unique(stage2_results$sseqid)
-  mist_results$stage2_reference_ids <- stage2_reference_ids
+  MATEK_results$stage2_reference_ids <- stage2_reference_ids
   
   cat("\n--- Stage 2 Results (RPB2) ---\n")
   print(stage2_results[, c("sseqid", "pident", "length")])
@@ -255,7 +255,7 @@ MIST_identification <- function(
     }
   }
   
-  mist_results$stage3_its <- stage3_results
+  MATEK_results$stage3_its <- stage3_results
 
   cat("\n--- Stage 3 Results (ITS) ---\n")
   print(stage3_results[, c("sseqid", "pident", "length")])
@@ -273,7 +273,7 @@ if (nrow(stage3_results) > 0) {
       cat("  ", i, ". ", match$sseqid, "\n")
     }
     
-    mist_results$final_identification <- high_confidence_results$sseqid
+    MATEK_results$final_identification <- high_confidence_results$sseqid
     
   } else {
     cat("Probable matches:\n\n")
@@ -283,16 +283,16 @@ if (nrow(stage3_results) > 0) {
       cat("  ", i, ". ", match$sseqid, "\n")
     }
     
-    mist_results$final_identification <- stage3_results$sseqid
+    MATEK_results$final_identification <- stage3_results$sseqid
   }
   
 } else {
-  mist_results$final_identification <- "No reliable Trichoderma identification found"
-  cat(mist_results$final_identification, "\n")
+  MATEK_results$final_identification <- "No reliable Trichoderma identification found"
+  cat(MATEK_results$final_identification, "\n")
 }
 
 cat("\n==================================================\n\n")
 
-return(mist_results)
+return(MATEK_results)
 
 }

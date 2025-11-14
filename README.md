@@ -1,7 +1,6 @@
 # TrichofindR
  Tool for identifying Trichoderma species.
 
-
 # Installation
 
 ```r
@@ -96,16 +95,16 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
 ```
 
-# Automatic TEF1-RPB2-ITS identification
+# Automatic TEF1-RPB2-ITS identification (MATEK)
 
 I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ITS identification from FASTA sequence.
 
 ```r
-MIST_identification <- MIST_identification(genome_path = "your_genome_sequence.fasta")
+MATEK_identification <- MATEK_identification(genome_path = "your_genome_sequence.fasta")
 
-MIST_identification$stage1_tef1
-MIST_identification$stage2_rpb2
-MIST_identification$stage3_its
+MATEK_identification$stage1_tef1
+MATEK_identification$stage2_rpb2
+MATEK_identification$stage3_its
 
 ```
-# Automatic 
+# Automatic Integrative Multilocus Delimitation of Trichoderma Species (IMLDS)
