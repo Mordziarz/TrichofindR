@@ -1,4 +1,4 @@
-#' Analyze genome for target amplicons using primer pairs (optimized - FINAL FIXED)
+#' Analyze genome for target amplicons using primer pairs
 #'
 #' Searches a genome file in FASTA format for potential amplicons using sets of
 #' forward and reverse primers. Processes each contig, identifies primer matches,
@@ -48,7 +48,7 @@ analyze_trichoderma_genome <- function(genome_file,
                                        all = FALSE,
                                        min_contig_length = 1000) {
 
-  cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS (OPTIMIZED - FINAL FIXED) ===\n")
+  cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS ===\n")
   cat("Genome file:", genome_file, "\n")
 
   cat("\nLoading all contigs...\n")
@@ -168,7 +168,7 @@ analyze_trichoderma_genome <- function(genome_file,
 
 
 
-#' Analyze single contig for amplicons (optimized - FINAL FIXED)
+#' Analyze single contig for amplicons
 #'
 #' Helper function that searches a single DNA sequence for all possible amplicons
 #' formed by provided primer pairs. Handles all primer orientations on both strands.
