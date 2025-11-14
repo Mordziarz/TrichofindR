@@ -697,8 +697,8 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @export
 #'
 
-IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
-  
+IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
+
   loci <- list(
     TEF1 = TEF1,
     RPB2 = RPB2,
@@ -747,7 +747,7 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     dir.create(output_dir)
   }
   
-  combined_sequences <- NULL
+  combined_sequences <- Biostrings::DNAStringSet()
   
   for (locus_folder in locus_folders) {
     fasta_files <- list.files(
@@ -776,7 +776,7 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     }
   }
   
-  if (!is.null(combined_sequences)) {
+  if (length(combined_sequences) > 0) {
     output_fasta <- file.path(output_dir, "ultra.fasta")
     Biostrings::writeXStringSet(combined_sequences, output_fasta)
     message("Combined FASTA written to: ", output_fasta)
