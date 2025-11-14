@@ -663,3 +663,129 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
   message("Analysis of all loci completed.")
   return(all_results)
 }
+
+#' Combine Trichoderma Amplicons into Single FASTA
+#'
+#' @description
+#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK, and ITS loci
+#' into a single FASTA file for TrichofindR database comparison.
+#' Excludes TUB2 due to duplication in Trichoderma genomes.
+#' Creates IMLDS_identification folder containing the combined FASTA.
+#'
+#' @param genome_file Character string specifying the path to the genome FASTA file.
+#'
+#' @return
+#' Invisibly returns path to the combined FASTA file (ultra.fasta).
+#' Creates IMLDS_identification folder with ultra.fasta inside.
+#'
+#' @examples
+#' \dontrun{
+#' # Run with default genome file
+#' create_imlds_identification()
+#'
+#' # Run with custom genome file
+#' create_imlds_identification(
+#'   genome_file = "/path/to/custom/genome.fasta"
+#' )
+#' }
+#'
+#' @seealso
+#' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
+#'
+#' @keywords internal
+#'
+#' @export
+#'
+
+IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
+  
+  loci <- list(
+    TEF1 = TEF1,
+    RPB2 = RPB2,
+    TEF3 = TEF3,
+    LNS2 = LNS2,
+    ACT = ACT,
+    PGK = PGK,
+    ITS = ITS
+  )
+  
+  common_params <- list(
+    genome_file = genome_file,
+    max_mismatch = 1,
+    max_amplicon_length = 5000,
+    min_amplicon_length = 100,
+    all = TRUE
+  )
+  
+  all_results <- list()
+  locus_folders <- c()
+  
+  message("Starting amplicon identification for IMLDS loci...")
+  
+  for (locus_name in names(loci)) {
+    message("Analyzing: ", locus_name)
+    
+    results <- analyze_trichoderma_genome(
+      forward_primers = loci[[locus_name]],
+      reverse_primers = loci[[locus_name]],
+      output_dir = paste0(locus_name, "_results"),
+      max_mismatch = common_params$max_mismatch,
+      max_amplicon_length = common_params$max_amplicon_length,
+      min_amplicon_length = common_params$min_amplicon_length,
+      genome_file = common_params$genome_file,
+      all = common_params$all
+    )
+    
+    all_results[[locus_name]] <- results
+    locus_folders <- c(locus_folders, paste0(locus_name, "_results"))
+  }
+  
+  message("All loci analyzed. Combining sequences...")
+  
+  output_dir <- "IMLDS_identification"
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir)
+  }
+  
+  combined_sequences <- NULL
+  
+  for (locus_folder in locus_folders) {
+    fasta_files <- list.files(
+      locus_folder,
+      pattern = "\\.fasta$|\\.fa$",
+      full.names = TRUE
+    )
+    
+    if (length(fasta_files) > 0) {
+      tryCatch({
+        sequences <- Biostrings::readDNAStringSet(fasta_files[1])
+        
+        names(sequences) <- paste0(
+          names(sequences),
+          "_",
+          sub("_results", "", locus_folder)
+        )
+        
+        combined_sequences <- c(combined_sequences, sequences)
+        message("Added ", length(sequences), " sequences from ", locus_folder)
+      }, error = function(e) {
+        warning("Could not read FASTA from ", locus_folder, ": ", e$message)
+      })
+    } else {
+      warning("No FASTA file found in ", locus_folder)
+    }
+  }
+  
+  if (!is.null(combined_sequences)) {
+    output_fasta <- file.path(output_dir, "ultra.fasta")
+    Biostrings::writeXStringSet(combined_sequences, output_fasta)
+    message("Combined FASTA written to: ", output_fasta)
+    message("Total sequences: ", length(combined_sequences))
+  } else {
+    warning("No sequences were combined!")
+  }
+  
+  message("IMLDS identification complete!")
+  message("Individual locus folders preserved: ", paste(locus_folders, collapse = ", "))
+  invisible(file.path(output_dir, "ultra.fasta"))
+}
