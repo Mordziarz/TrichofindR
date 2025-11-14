@@ -108,3 +108,14 @@ MATEK_identification$stage3_its
 
 ```
 # Automatic Integrative Multilocus Delimitation of Trichoderma Species (IMLDS)
+
+The goal of this identification is to create a single FASTA file containing all amplicons and compare it against the TrichofindR database. I decided to exclude TUB2 because it always appears in two copies in Trichoderma genomes.
+
+```r
+IMLDS_identification <- IMLDS_identification(genome_path = "your_genome_sequence.fasta")
+
+IMLDS_identification$stage1_tef1
+IMLDS_identification$stage2_rpb2
+IMLDS_identification$stage3_its
+
+```
