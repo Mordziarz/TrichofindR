@@ -97,6 +97,8 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
 
 # Automatic TEF1-RPB2-ITS identification (MATEK)
 
+MATEK - Multilocus Analytical Trichoderma Evaluation Key
+
 I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ITS identification from FASTA sequence.
 
 ```r
