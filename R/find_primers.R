@@ -747,9 +747,9 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
     dir.create(output_dir)
   }
   
-  all_sequences_list <- list()
-  all_headers_list <- character()
-  sequence_counter <- 0
+  concatenated_sequence <- Biostrings::DNAString()
+  locus_info <- character()
+  total_bp <- 0
   
   for (locus_folder in locus_folders) {
     fasta_file <- file.path(locus_folder, "amplicons_without_primers.fasta")
@@ -759,18 +759,18 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
         sequences <- Biostrings::readDNAStringSet(fasta_file)
         
         if (length(sequences) > 0) {
+          locus_name <- sub("_results", "", locus_folder)
+          
           for (i in seq_along(sequences)) {
-            sequence_counter <- sequence_counter + 1
+            current_seq <- sequences[[i]]
+            concatenated_sequence <- Biostrings::xscat(concatenated_sequence, current_seq)
+            total_bp <- total_bp + Biostrings::width(current_seq)
             
-            old_header <- names(sequences)[i]
-            locus_name <- sub("_results", "", locus_folder)
-            new_header <- paste0(locus_name, "_seq", i, " | ", old_header)
-            
-            all_sequences_list[[sequence_counter]] <- sequences[[i]]
-            all_headers_list[sequence_counter] <- new_header
+            locus_info <- c(locus_info, paste0(locus_name, "_", Biostrings::width(current_seq), "bp"))
           }
           
-          message("Added ", length(sequences), " sequences from ", locus_folder)
+          message("Added ", length(sequences), " sequences from ", locus_folder, " (", 
+                  sum(Biostrings::width(sequences)), " bp total)")
         }
       }, error = function(e) {
         warning("Could not read FASTA from ", fasta_file, ": ", e$message)
@@ -780,21 +780,26 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
     }
   }
   
-  if (length(all_sequences_list) > 0) {
-    combined_sequences <- Biostrings::DNAStringSet(all_sequences_list)
-    names(combined_sequences) <- all_headers_list
+  if (Biostrings::width(concatenated_sequence) > 0) {
+    header <- paste0("IMLDS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
+                     paste(locus_info, collapse=" + "))
+    
+    final_sequences <- Biostrings::DNAStringSet(concatenated_sequence)
+    names(final_sequences) <- header
     
     output_fasta <- file.path(output_dir, "ultra.fasta")
-    Biostrings::writeXStringSet(combined_sequences, output_fasta)
-    message("Combined FASTA written to: ", output_fasta)
-    message("Total sequences: ", length(combined_sequences))
+    Biostrings::writeXStringSet(final_sequences, output_fasta)
+    
+    message("\nCombined FASTA written to: ", output_fasta)
+    message("Total concatenated sequence: ", total_bp, " bp")
+    message("Header: ", header)
   } else {
     warning("No sequences were combined!")
     invisible(NULL)
     return(NULL)
   }
   
-  message("IMLDS identification complete!")
+  message("\nIMIDS identification complete!")
   message("Individual locus folders preserved: ", paste(locus_folders, collapse = ", "))
   invisible(file.path(output_dir, "ultra.fasta"))
 }
