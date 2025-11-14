@@ -670,21 +670,21 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK, and ITS loci
 #' into a single FASTA file for TrichofindR database comparison.
 #' Excludes TUB2 due to duplication in Trichoderma genomes.
-#' Creates IMLDS_identification folder containing the combined FASTA.
+#' Creates IMLDTS_identification folder containing the combined FASTA.
 #'
 #' @param genome_file Character string specifying the path to the genome FASTA file.
 #'
 #' @return
 #' Invisibly returns path to the combined FASTA file (ultra.fasta).
-#' Creates IMLDS_identification folder with ultra.fasta inside.
+#' Creates IMLDTS_identification folder with ultra.fasta inside.
 #'
 #' @examples
 #' \dontrun{
 #' # Run with default genome file
-#' create_imlds_identification()
+#' create_IMLDTS_identification()
 #'
 #' # Run with custom genome file
-#' create_imlds_identification(
+#' create_IMLDTS_identification(
 #'   genome_file = "/path/to/custom/genome.fasta"
 #' )
 #' }
@@ -697,7 +697,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @export
 #'
 
-IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
+IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
 
 genome_basename <- tools::file_path_sans_ext(basename(genome_file))
 
@@ -722,7 +722,7 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   all_results <- list()
   locus_folders <- c()
   
-  message("Starting amplicon identification for IMLDS loci...")
+  message("Starting amplicon identification for IMLDTS loci...")
   
   for (locus_name in names(loci)) {
     message("Analyzing: ", locus_name)
@@ -744,7 +744,7 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   
   message("All loci analyzed. Combining sequences...")
   
-  output_dir <- "IMLDS_identification"
+  output_dir <- "IMLDTS_identification"
   if (!dir.exists(output_dir)) {
     dir.create(output_dir)
   }
@@ -784,7 +784,7 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   }
   
   if (nchar(concatenated_sequence) > 0) {
-    header <- paste0(genome_basename, "_IMLDS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
+    header <- paste0(genome_basename, "_IMLDTS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
                      paste(locus_info, collapse=" + "))
     
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
