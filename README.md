@@ -1,16 +1,6 @@
 # TrichofindR
  Tool for identifying Trichoderma species.
 
- Inspired by the article "MIST: a Multilocus Identification System for Trichoderma" (doi: 10.1128/AEM.01532-20), I have developed an R script that automates the identification of the RPB2, ITS, and TEF1 regions. The program is designed to find these specific gene fragments in a given genome, allowing the user to paste the resulting sequences into the http://mmit.china-cctc.org/index.php database for species identification.
-
- To use the tool, simply call the analyze_trichoderma_genome function with the appropriate parameters.
-
-You will find the results of the analysis in the specified output directory. The following files will be generated:
-
-    amplicons_with_primers.fasta: A FASTA file containing all found amplicon sequences, including the primer regions.
-
-    amplicons_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
-
 
 # Installation
 
@@ -35,6 +25,12 @@ library(rBLAST)
 This example shows how to search for the TEF1 gene. Note that the EF1-728F and TEF1LLErev primers can be found on both the forward and reverse, so they are included in both the forward_primers and reverse_primers arguments.
 
 all A logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
+
+You will find the results of the analysis in the specified output directory. The following files will be generated:
+
+    amplicons_with_primers.fasta: A FASTA file containing all found amplicon sequences, including the primer regions.
+
+    amplicons_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
 
 ```r
 results <- analyze_trichoderma_genome(
