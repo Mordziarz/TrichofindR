@@ -24,7 +24,7 @@ Be sure to install the rBLAST package (https://github.com/mhahsler/rBLAST)﻿
 
 This example shows how to search for the TEF1 gene. Note that the EF1-728F and TEF1LLErev primers can be found on both the forward and reverse, so they are included in both the forward_primers and reverse_primers arguments.
 
-all A logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
+`all` a logical value. If `TRUE`, the function processes all contigs. If `FALSE`, it stops after the first contig with a successful amplicon match. Defaults to `FALSE`.
 
 You will find the results of the analysis in the specified output directory. The following files will be generated:
 
