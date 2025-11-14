@@ -575,3 +575,91 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
 
   invisible(NULL)
 }
+
+#' Analyze Multiple Trichoderma Loci from Genome
+#'
+#' @description
+#' Performs primer-based amplicon identification for multiple Trichoderma loci
+#' (TEF1, RPB2, TEF3, TUB2, LNS2, ACT, PGK, ITS) from a genome sequence file.
+#' Results for each locus are saved to separate output directories.
+#'
+#' @param genome_file Character string specifying the path to the genome FASTA file.
+#'
+#'
+#' Analysis parameters are fixed across all loci:
+#' \itemize{
+#'   \item Maximum primer mismatches: 1
+#'   \item Maximum amplicon length: 5000 bp
+#'   \item Minimum amplicon length: 100 bp
+#' }
+#'
+#' @return
+#' A named list containing analysis results for each locus.
+#' Names correspond to locus identifiers (TEF1, RPB2, etc.).
+#' Each element contains the output from \code{\link{analyze_trichoderma_genome}}.
+#'
+#' @examples
+#' \dontrun{
+#' # Run with default genome file
+#' results <- all_amplicon_identification()
+#'
+#' # Run with custom genome file
+#' results <- all_amplicon_identification(
+#'   genome_file = "/path/to/custom/genome.fasta"
+#' )
+#'
+#' # Access results for specific locus
+#' tef1_results <- results$TEF1
+#' its_results <- results$ITS
+#' }
+#'
+#' @seealso
+#' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
+#'
+#' @keywords internal
+#'
+#' @export
+#'
+all_amplicon_identification <- function(genome_file = "file.fasta") {
+  
+  loci <- list(
+    TEF1 = TEF1,
+    RPB2 = RPB2,
+    TEF3 = TEF3,
+    TUB2 = TUB2,
+    LNS2 = LNS2,
+    ACT = ACT,
+    PGK = PGK,
+    ITS = ITS
+  )
+  
+  common_params <- list(
+    genome_file = genome_file,
+    max_mismatch = 1,
+    max_amplicon_length = 5000,
+    min_amplicon_length = 100,
+    all = TRUE
+  )
+  
+  all_results <- list()
+  
+  for (locus_name in names(loci)) {
+    message("Analyzing: ", locus_name)
+    
+    results <- analyze_trichoderma_genome(
+      forward_primers = loci[[locus_name]],
+      reverse_primers = loci[[locus_name]],
+      output_dir = paste0(locus_name, "_results"),
+      max_mismatch = common_params$max_mismatch,
+      max_amplicon_length = common_params$max_amplicon_length,
+      min_amplicon_length = common_params$min_amplicon_length,
+      genome_file = common_params$genome_file,
+      all = common_params$all
+    )
+    
+    all_results[[locus_name]] <- results
+  }
+  
+  message("Analysis of all loci completed.")
+  return(all_results)
+}
