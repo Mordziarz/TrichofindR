@@ -46,7 +46,7 @@ results <- analyze_trichoderma_genome(
 ```
 # Using pre-defined primer sets
 
-I have pre-coded all of the possible primers mentioned in the article. You can easily switch between them by simply referencing the pre-defined variables: RPB2, ITS, TEF1, LNS2, ACT, TUB2, TEF3, PGK.
+I have pre-coded all of the possible primers mentioned in the article. You can easily switch between them by simply referencing the pre-defined variables: RPB2, ITS, TEF1, LNS2, ACT, TUB2, TEF3 or PGK.
 
 For example, to identify the RPB2 gene, you would use this code:
 
