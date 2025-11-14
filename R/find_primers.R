@@ -752,7 +752,7 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
   total_bp <- 0
   
   for (locus_folder in locus_folders) {
-    fasta_file <- file.path(locus_folder, "amplicons_without_primers.fasta")
+    fasta_file <- file.path(locus_folder, "amplicons_with_primers.fasta")
     
     if (file.exists(fasta_file)) {
       tryCatch({
