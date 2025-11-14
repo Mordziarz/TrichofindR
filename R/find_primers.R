@@ -747,42 +747,51 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
     dir.create(output_dir)
   }
   
-  combined_sequences <- Biostrings::DNAStringSet()
+  all_sequences_list <- list()
+  all_headers_list <- character()
+  sequence_counter <- 0
   
   for (locus_folder in locus_folders) {
-    fasta_files <- list.files(
-      locus_folder,
-      pattern = "\\.fasta$|\\.fa$",
-      full.names = TRUE
-    )
+    fasta_file <- file.path(locus_folder, "amplicons_without_primers.fasta")
     
-    if (length(fasta_files) > 0) {
+    if (file.exists(fasta_file)) {
       tryCatch({
-        sequences <- Biostrings::readDNAStringSet(fasta_files[1])
+        sequences <- Biostrings::readDNAStringSet(fasta_file)
         
-        names(sequences) <- paste0(
-          names(sequences),
-          "_",
-          sub("_results", "", locus_folder)
-        )
-        
-        combined_sequences <- c(combined_sequences, sequences)
-        message("Added ", length(sequences), " sequences from ", locus_folder)
+        if (length(sequences) > 0) {
+          for (i in seq_along(sequences)) {
+            sequence_counter <- sequence_counter + 1
+            
+            old_header <- names(sequences)[i]
+            locus_name <- sub("_results", "", locus_folder)
+            new_header <- paste0(locus_name, "_seq", i, " | ", old_header)
+            
+            all_sequences_list[[sequence_counter]] <- sequences[[i]]
+            all_headers_list[sequence_counter] <- new_header
+          }
+          
+          message("Added ", length(sequences), " sequences from ", locus_folder)
+        }
       }, error = function(e) {
-        warning("Could not read FASTA from ", locus_folder, ": ", e$message)
+        warning("Could not read FASTA from ", fasta_file, ": ", e$message)
       })
     } else {
-      warning("No FASTA file found in ", locus_folder)
+      warning("File not found: ", fasta_file)
     }
   }
   
-  if (length(combined_sequences) > 0) {
+  if (length(all_sequences_list) > 0) {
+    combined_sequences <- Biostrings::DNAStringSet(all_sequences_list)
+    names(combined_sequences) <- all_headers_list
+    
     output_fasta <- file.path(output_dir, "ultra.fasta")
     Biostrings::writeXStringSet(combined_sequences, output_fasta)
     message("Combined FASTA written to: ", output_fasta)
     message("Total sequences: ", length(combined_sequences))
   } else {
     warning("No sequences were combined!")
+    invisible(NULL)
+    return(NULL)
   }
   
   message("IMLDS identification complete!")
