@@ -699,6 +699,8 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 
 IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
 
+genome_basename <- tools::file_path_sans_ext(basename(genome_file))
+
   loci <- list(
     TEF1 = TEF1,
     RPB2 = RPB2,
@@ -782,7 +784,7 @@ IMLDS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
   }
   
   if (nchar(concatenated_sequence) > 0) {
-    header <- paste0("IMLDS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
+    header <- paste0(genome_basename, "_IMLDS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
                      paste(locus_info, collapse=" + "))
     
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
