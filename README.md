@@ -62,6 +62,7 @@ results <- analyze_trichoderma_genome(
   all=FALSE
 )
 ```
+# Identify 8 amplicons at once
 
 I created a function to identify 8 amplicons at once by providing only the path to the Trichoderma genome. The function automatically creates 8 folders in your working directory, each with a different gene.
 
