@@ -790,7 +790,7 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
     
-    output_fasta <- file.path(output_dir, "ultra.fasta")
+    output_fasta <- file.path(output_dir, paste0(genome_basename,"_ultra.fasta"))
     Biostrings::writeXStringSet(final_sequences, output_fasta)
     
     message("\nCombined FASTA written to: ", output_fasta)
