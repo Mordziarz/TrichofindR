@@ -19,6 +19,7 @@ library(GenomicRanges)
 library(IRanges)
 library(rBLAST)
 ```
+Be sure to install the rBLAST package (https://github.com/mhahsler/rBLAST)﻿
 
 # Example: Identifying the TEF1 gene
 
@@ -95,9 +96,9 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
 ```
 
-# Automatic MIST identification
+# Automatic TEF1-RPB2-ITS identification
 
-I created an automatic MIST identification system where users don't have to manually click through FASTA sequences—they simply upload their genome.
+I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ITS identification from FASTA sequences with a single-click upload.﻿
 
 ```r
 MIST_identification <- MIST_identification(genome_path = "your_genome_sequence.fasta")
