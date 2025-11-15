@@ -1049,8 +1049,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     
     message("✓ Combined and oriented FASTA written to: ", output_fasta)
     message("  Total concatenated sequence: ", total_bp, " bp")
-    message("  Trichoderma species: ", if (!is.null(trichoderma_species)) trichoderma_species else "Unknown")
-    message("  Header: ", header)
   } else {
     warning("No sequences were combined!")
     invisible(NULL)
