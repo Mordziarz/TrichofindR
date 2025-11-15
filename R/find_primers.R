@@ -679,6 +679,16 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Invisibly returns path to the combined FASTA file.
 #' Creates IMLDTS_identification folder with combined FASTA inside.
 #'
+#' @examples
+#' \dontrun{
+#' # Run with default genome file
+#' IMLDTS_identification()
+#'
+#' # Run with custom genome file
+#' IMLDTS_identification(
+#'   genome_file = "/path/to/custom/genome.fasta"
+#' )
+#' }
 #'
 #' @seealso
 #' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
@@ -687,11 +697,22 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'
 #' @export
 #'
+
 IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   
   loci <- list(
+    TEF1 = TEF1_F,
+    RPB2 = RPB2_F,
+    TEF3 = TEF3_F,
+    LNS2 = LNS2_F,
+    ACT = ACT_F,
+    PGK = PGK_F,
+    ITS = ITS_F
+  )
+  
+  loci_primers <- list(
     TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
     RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
     TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
@@ -718,8 +739,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     message("Analyzing: ", locus_name)
     
     results <- analyze_trichoderma_genome(
-      forward_primers = loci[[locus_name]]$forward,
-      reverse_primers = loci[[locus_name]]$reverse,
+      forward_primers = loci[[locus_name]],
+      reverse_primers = loci[[locus_name]],
       output_dir = paste0(locus_name, "_results"),
       max_mismatch = common_params$max_mismatch,
       max_amplicon_length = common_params$max_amplicon_length,
@@ -732,6 +753,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     locus_folders <- c(locus_folders, paste0(locus_name, "_results"))
   }
   
+  message("Analysis of all loci completed.")
   message("All loci analyzed. Reading sequences for combining...")
   
   output_dir <- "IMLDTS_identification"
@@ -758,8 +780,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             all_sequences_data[[length(all_sequences_data) + 1]] <- list(
               sequence = seq_char,
               locus_name = locus_name,
-              forward_primers = loci[[locus_name]]$forward,
-              reverse_primers = loci[[locus_name]]$reverse
+              forward_primers = loci_primers[[locus_name]]$forward,
+              reverse_primers = loci_primers[[locus_name]]$reverse
             )
           }
           
@@ -774,6 +796,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   message("All loci read. Now orienting sequences and combining...")
+
   
   concatenated_sequence <- ""
   locus_info <- character()
@@ -788,6 +811,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
+    # Check orientation based on forward primers
     found_in_original <- FALSE
     
     for (fwd in fwd_primers) {
