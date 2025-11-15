@@ -664,6 +664,43 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
   return(all_results)
 }
 
+  find_primer_position <- function(seq_dna, primers, tolerance = 1, position = "start", window = 150) {
+    
+    if (is.null(primers) || length(primers) == 0) return(FALSE)
+    
+    if (class(seq_dna)[1] == "DNAString") {
+      seq_dna <- as.character(seq_dna)
+    }
+    
+    seq_len <- nchar(seq_dna)
+    seq_dna_obj <- Biostrings::DNAString(seq_dna)
+    
+    for (primer in primers) {
+      primer_len <- nchar(primer)
+      
+      if (position == "start") {
+        search_region <- Biostrings::subseq(seq_dna_obj, 1, min(window, seq_len))
+      } else {
+        start_pos <- max(1, seq_len - window + 1)
+        search_region <- Biostrings::subseq(seq_dna_obj, start_pos, seq_len)
+      }
+      
+      for (mm in 0:tolerance) {
+        tryCatch({
+          matches <- Biostrings::matchPattern(primer, search_region, max.mismatch = mm)
+          if (length(matches) > 0) {
+            return(TRUE)
+          }
+        }, error = function(e) {
+          return(FALSE)
+        })
+      }
+    }
+    
+    return(FALSE)
+  }
+  
+
 #' Combine Trichoderma Amplicons into Single FASTA
 #'
 #' @description
@@ -781,33 +818,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   message("All sequences read. Now orienting and combining...")
   
-  find_primer_position <- function(seq_dna, primers, tolerance = 1, position = "start", window = 150) {
-
-    if (is.null(primers) || length(primers) == 0) return(FALSE)
-    
-    seq_len <- nchar(seq_dna)
-    
-    for (primer in primers) {
-      primer_len <- nchar(primer)
-      
-      if (position == "start") {
-        search_region <- Biostrings::subseq(seq_dna, 1, min(window, seq_len))
-      } else {
-        start_pos <- max(1, seq_len - window + 1)
-        search_region <- Biostrings::subseq(seq_dna, start_pos, seq_len)
-      }
-      
-      for (mm in 0:tolerance) {
-        matches <- Biostrings::matchPattern(primer, search_region, max.mismatch = mm)
-        if (length(matches) > 0) {
-          return(TRUE)
-        }
-      }
-    }
-    
-    return(FALSE)
-  }
-  
   concatenated_sequence <- ""
   locus_info <- character()
   oriented_count <- list()
@@ -825,6 +835,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     fwd_primers <- seq_data$forward_primers
     rev_primers <- seq_data$reverse_primers
     
+    seq_char <- as.character(seq_char)
     seq_dna <- Biostrings::DNAString(seq_char)
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
@@ -845,7 +856,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       orientation <- "reverse_complemented"
     } else if (fwd_at_start && !rev_at_end && !rev_at_start) {
       final_seq <- seq_char
-      orientation <- "forward" 
+      orientation <- "forward"
     } else if (rev_at_start && !fwd_at_end && !fwd_at_start) {
       final_seq <- seq_rc
       orientation <- "reverse_complemented"
@@ -853,6 +864,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       final_seq <- seq_char
       orientation <- "unknown"
     }
+    
     
     if (is.null(orientation_stats[[orientation]])) {
       orientation_stats[[orientation]] <- list()
