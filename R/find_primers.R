@@ -837,9 +837,9 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             header <- names(seq)
             
             if (is.null(trichoderma_species)) {
-              species_match <- regmatches(header, regexpr("Trichoderma[_\\s]+([A-Za-z]+)(?=[_\\s\\d]|$)", header, perl = TRUE))
+              species_match <- regmatches(header, regexpr("Trichoderma_[a-z]+", header))
               if (length(species_match) > 0) {
-                trichoderma_species <- gsub(" ", "_", species_match[1])
+                trichoderma_species <- species_match[1]
               }
             }
             
