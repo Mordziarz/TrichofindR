@@ -738,27 +738,46 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
     return(FALSE)
   }
 
-#' Combine Trichoderma Amplicons into Single FASTA
+#' IMLDTS Identification with Ultra-FASTA Header from Genome Name
 #'
-#' @description
-#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK loci
-#' into a single FASTA file for TrichofindR database comparison.
-#' Excludes TUB2 and ITS.
-#' Sequences are oriented (forward to reverse primer) based on forward/reverse primer matching.
-#' Reports which sequences were reverse complemented.
+#' Identifies IMLDTS loci (TEF1, RPB2, TEF3, LNS2, ACT, PGK) from a genome file.
+#' Extracts species name from genome filename and creates concatenated ultra-FASTA
+#' with organism name in the header.
 #'
-#' @param genome_file Character string specifying the path to the genome FASTA file.
+#' @param genome_file Character string specifying path to genome FASTA file.
+#'   Filename should follow pattern: "Species_name_genome.fasta" or similar,
+#'   where the species name (e.g., "Trichoderma_longibrachiatum") is extracted
+#'   and used in the ultra-FASTA header.
 #'
-#' @return
-#' Invisibly returns path to the combined FASTA file.
-#' Creates IMLDTS_identification folder with combined FASTA inside.
+#' @return Path to generated ultra-FASTA file (invisibly).
 #'
 #' @export
-#'
 
 IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
+  
+  message("Reading genome FASTA header to extract organism name...")
+  
+  tryCatch({
+    genome_seqs <- Biostrings::readDNAStringSet(genome_file, nrec = 1)
+    first_header <- names(genome_seqs)[1]
+    
+    organism_match <- regmatches(first_header, 
+                                 regexpr("[A-Z][a-z]+\\s+[a-z]+", first_header))
+    
+    if (length(organism_match) > 0) {
+      organism_name <- gsub(" ", "_", organism_match[1])
+      message("✓ Organism name extracted from FASTA header: ", organism_name)
+    } else {
+      warning("Could not extract organism name from FASTA header: ", first_header)
+      warning("Using genome filename as fallback")
+      organism_name <- genome_basename
+    }
+  }, error = function(e) {
+    warning("Error reading genome FASTA header: ", e$message)
+    organism_name <<- genome_basename
+  })
   
   loci <- list(
     TEF1 = TEF1,
@@ -819,7 +838,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   all_sequences_data <- list()
-  trichoderma_species <- NULL
   
   for (locus_folder in locus_folders) {
     fasta_file <- file.path(locus_folder, "amplicons_with_primers.fasta")
@@ -835,13 +853,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             seq <- sequences[[i]]
             seq_char <- as.character(seq)
             header <- names(seq)
-            
-            if (is.null(trichoderma_species)) {
-              species_match <- regmatches(header, regexpr("Trichoderma_[a-z]+", header))
-              if (length(species_match) > 0) {
-                trichoderma_species <- species_match[1]
-              }
-            }
             
             all_sequences_data[[length(all_sequences_data) + 1]] <- list(
               sequence = seq_char,
@@ -1026,11 +1037,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     
     locus_details <- paste(locus_info, collapse=" + ")
     
-    species_info <- if (!is.null(trichoderma_species)) {
-      paste0(" | ", trichoderma_species)
-    } else {
-      ""
-    }
+    # Use organism_name extracted from genome FASTA header
+    species_info <- paste0(" | ", organism_name)
     
     header <- paste0(
       genome_basename, "_IMLDTS_ultra",
@@ -1048,7 +1056,9 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     Biostrings::writeXStringSet(final_sequences, output_fasta)
     
     message("✓ Combined and oriented FASTA written to: ", output_fasta)
+    message("  Organism name in header: ", organism_name)
     message("  Total concatenated sequence: ", total_bp, " bp")
+    message("  Header: ", substr(header, 1, 120), "...")
   } else {
     warning("No sequences were combined!")
     invisible(NULL)
