@@ -681,6 +681,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'
 #' @export
 #'
+
 IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
@@ -795,43 +796,70 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_char <- seq_data$sequence
     locus_name <- seq_data$locus_name
     seq_id <- seq_data$seq_id
-    fwd_primers <- seq_data$forward_primers 
+    fwd_primers <- seq_data$forward_primers
+    rev_primers <- seq_data$reverse_primers
     
     seq_dna <- Biostrings::DNAString(seq_char)
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    found_in_original <- FALSE
+    fwd_at_start <- FALSE
+    rev_at_end <- FALSE
     
     for (fwd in fwd_primers) {
-      matches_original <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
-      if (length(matches_original) > 0) {
-        found_in_original <- TRUE
-        break
-      }
-    }
-    
-    if (found_in_original) {
-      final_seq <- seq_char
-      orientation <- "forward"
-    } else {
-      found_in_rc <- FALSE
-      
-      for (fwd in fwd_primers) {
-        matches_rc <- Biostrings::matchPattern(fwd, seq_rc_dna, max.mismatch = 1)
-        if (length(matches_rc) > 0) {
-          found_in_rc <- TRUE
+      matches_start <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
+      if (length(matches_start) > 0) {
+        if (start(matches_start)[1] <= 100) {
+          fwd_at_start <- TRUE
           break
         }
       }
-      
-      if (found_in_rc) {
-        final_seq <- seq_rc
-        orientation <- "reverse_complemented"
-      } else {
-        final_seq <- seq_char
-        orientation <- "unknown"
+    }
+    
+    for (rev in rev_primers) {
+      matches_end <- Biostrings::matchPattern(rev, seq_dna, max.mismatch = 1)
+      if (length(matches_end) > 0) {
+        seq_len <- nchar(seq_char)
+        if (end(matches_end)[length(matches_end)] >= seq_len - 100) {
+          rev_at_end <- TRUE
+          break
+        }
       }
+    }
+    
+    rev_at_start <- FALSE
+    fwd_at_end <- FALSE
+    
+    for (rev in rev_primers) {
+      matches_start <- Biostrings::matchPattern(rev, seq_dna, max.mismatch = 1)
+      if (length(matches_start) > 0) {
+        if (start(matches_start)[1] <= 100) {
+          rev_at_start <- TRUE
+          break
+        }
+      }
+    }
+    
+    for (fwd in fwd_primers) {
+      matches_end <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
+      if (length(matches_end) > 0) {
+        seq_len <- nchar(seq_char)
+        if (end(matches_end)[length(matches_end)] >= seq_len - 100) {
+          fwd_at_end <- TRUE
+          break
+        }
+      }
+    }
+    
+    if (fwd_at_start && rev_at_end) {
+      final_seq <- seq_char
+      orientation <- "forward"
+    } else if (rev_at_start && fwd_at_end) {
+      final_seq <- seq_rc
+      orientation <- "reverse_complemented"
+    } else {
+      final_seq <- seq_char
+      orientation <- "unknown"
     }
     
     if (is.null(orientation_stats[[orientation]])) {
