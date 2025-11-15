@@ -667,9 +667,10 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Combine Trichoderma Amplicons into Single FASTA
 #'
 #' @description
-#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK, and ITS loci
+#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, and PGK loci
 #' into a single FASTA file for TrichofindR database comparison.
 #' Excludes TUB2 due to duplication in Trichoderma genomes.
+#' ITS was also excluded from this analysis
 #' Sequences are oriented (forward to reverse primer) based on forward/reverse primer matching.
 #'
 #' @param genome_file Character string specifying the path to the genome FASTA file.
