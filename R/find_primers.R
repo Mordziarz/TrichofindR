@@ -698,11 +698,6 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'
 
 find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 2) {
-    """
-    Szuka primeru na początku lub końcu sekwencji
-    Używa okna równego długości primeru + tolerancja
-    tolerance = 2 aby obsłużyć błędy sekwencjonowania
-    """
     
     if (is.null(primers) || length(primers) == 0) return(FALSE)
     
