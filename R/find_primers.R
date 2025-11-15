@@ -851,7 +851,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   message("All sequences read. Now orienting and combining...")
-
+  
   concatenated_sequence <- ""
   locus_info <- character()
   oriented_count <- list()
@@ -876,10 +876,11 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 2)
-    rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 2)
-    rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 2)
-    fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 2)
+    
+    fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 1)
+    rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
+    rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
+    fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
     
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
