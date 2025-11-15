@@ -664,7 +664,45 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
   return(all_results)
 }
 
-  find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 1) {
+#' Search for Primer in Sequence Region
+#'
+#' Identifies primer sequences at the beginning or end of a DNA sequence,
+#' with tolerance for mismatches. Designed to handle sequence variations
+#' from SNPs, indels, or sequencing errors common in genomic data.
+#'
+#' @param seq_dna DNAString object or character string representing the DNA sequence to search.
+#'
+#' @param primers Character vector of primer sequences to search for. Multiple primers
+#'   can be provided; function returns TRUE if ANY primer is found.
+#'
+#' @param position Character string specifying where to search in the sequence.
+#'   Options are "start" (default) to search at the beginning or "end" to search
+#'   at the end. Search region spans from position 1 to search_window for "start",
+#'   or from (seq_length - search_window) to seq_length for "end".
+#'
+#' @param tolerance Integer specifying maximum number of mismatches allowed for
+#'   primer matching. Defaults to 2, allowing up to 2 nucleotide differences.
+#'   Searches progressively from 0 to tolerance mismatches.
+#'
+#' @details
+#' The function uses an adaptive search window calculated as:
+#' \deqn{search\_window = primer\_length + 10}
+#'
+#' This approach ensures primers are detected even if slightly outside the core
+#' primer region due to sequence variations. The function tests matches at each
+#' mismatch level (0 to tolerance) to find the best match quality.
+#'
+#' @return Logical. Returns TRUE if any primer is found within the specified region
+#'   and mismatch tolerance. Returns FALSE if no primers are detected or if inputs
+#'   are empty.
+#'
+
+find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 2) {
+    """
+    Szuka primeru na początku lub końcu sekwencji
+    Używa okna równego długości primeru + tolerancja
+    tolerance = 2 aby obsłużyć błędy sekwencjonowania
+    """
     
     if (is.null(primers) || length(primers) == 0) return(FALSE)
     
@@ -674,7 +712,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
     for (primer in primers) {
       primer_len <- nchar(primer)
       
-      search_window <- primer_len + 5
+      search_window <- primer_len + 10
       
       if (position == "start") {
         start_pos <- 1
@@ -700,7 +738,6 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
     
     return(FALSE)
   }
-  
 
 #' Combine Trichoderma Amplicons into Single FASTA
 #'
@@ -844,10 +881,10 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 1)
-    rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
-    rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
-    fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
+    fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 2)
+    rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 2)
+    rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 2)
+    fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 2)
     
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
