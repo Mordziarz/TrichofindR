@@ -691,13 +691,13 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   
   loci <- list(
-    TEF1 = TEF1_F,
-    RPB2 = RPB2_F,
-    TEF3 = TEF3_F,
-    LNS2 = LNS2_F,
-    ACT = ACT_F,
-    PGK = PGK_F,
-    ITS = ITS_F
+    TEF1 = TEF1,
+    RPB2 = RPB2,
+    TEF3 = TEF3,
+    LNS2 = LNS2,
+    ACT = ACT,
+    PGK = PGK,
+    ITS = ITS
   )
   
   common_params <- list(
