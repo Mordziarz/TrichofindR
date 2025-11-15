@@ -664,26 +664,27 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
   return(all_results)
 }
 
-  find_primer_position <- function(seq_dna, primers, tolerance = 1, position = "start", window = 150) {
+  find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 1) {
     
     if (is.null(primers) || length(primers) == 0) return(FALSE)
     
-    if (class(seq_dna)[1] == "DNAString") {
-      seq_dna <- as.character(seq_dna)
-    }
-    
-    seq_len <- nchar(seq_dna)
-    seq_dna_obj <- Biostrings::DNAString(seq_dna)
+    seq_char <- as.character(seq_dna)
+    seq_len <- nchar(seq_char)
     
     for (primer in primers) {
       primer_len <- nchar(primer)
       
+      search_window <- primer_len + 5
+      
       if (position == "start") {
-        search_region <- Biostrings::subseq(seq_dna_obj, 1, min(window, seq_len))
+        start_pos <- 1
+        end_pos <- min(search_window, seq_len)
       } else {
-        start_pos <- max(1, seq_len - window + 1)
-        search_region <- Biostrings::subseq(seq_dna_obj, start_pos, seq_len)
+        start_pos <- max(1, seq_len - search_window + 1)
+        end_pos <- seq_len
       }
+      
+      search_region <- Biostrings::subseq(seq_dna, start_pos, end_pos)
       
       for (mm in 0:tolerance) {
         tryCatch({
@@ -796,13 +797,14 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
           for (i in seq_along(sequences)) {
             seq <- sequences[[i]]
             seq_char <- as.character(seq)
+            header <- names(seq)
             
             all_sequences_data[[length(all_sequences_data) + 1]] <- list(
               sequence = seq_char,
               locus_name = locus_name,
               forward_primers = loci_primers[[locus_name]]$forward,
               reverse_primers = loci_primers[[locus_name]]$reverse,
-              seq_id = names(seq) 
+              seq_id = header
             )
           }
           
@@ -817,7 +819,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   message("All sequences read. Now orienting and combining...")
-  
+
   concatenated_sequence <- ""
   locus_info <- character()
   oriented_count <- list()
@@ -825,6 +827,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   orientation_stats <- list(
     forward = list(),
     reverse_complemented = list(),
+    reverse_complemented_fragment = list(),
+    forward_fragment = list(),
     unknown = list()
   )
   
@@ -840,13 +844,10 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    fwd_at_start <- find_primer_position(seq_dna, fwd_primers, tolerance = 1, position = "start", window = 150)
-    
-    rev_at_end <- find_primer_position(seq_dna, rev_primers, tolerance = 1, position = "end", window = 150)
-    
-    rev_at_start <- find_primer_position(seq_dna, rev_primers, tolerance = 1, position = "start", window = 150)
-    
-    fwd_at_end <- find_primer_position(seq_dna, fwd_primers, tolerance = 1, position = "end", window = 150)
+    fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 1)
+    rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
+    rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
+    fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
     
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
@@ -856,15 +857,14 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       orientation <- "reverse_complemented"
     } else if (fwd_at_start && !rev_at_end && !rev_at_start) {
       final_seq <- seq_char
-      orientation <- "forward"
+      orientation <- "forward_fragment"
     } else if (rev_at_start && !fwd_at_end && !fwd_at_start) {
       final_seq <- seq_rc
-      orientation <- "reverse_complemented"
+      orientation <- "reverse_complemented_fragment"
     } else {
       final_seq <- seq_char
       orientation <- "unknown"
     }
-    
     
     if (is.null(orientation_stats[[orientation]])) {
       orientation_stats[[orientation]] <- list()
@@ -900,34 +900,65 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   forward_count <- length(orientation_stats$forward)
   reverse_count <- length(orientation_stats$reverse_complemented)
+  reverse_frag_count <- length(orientation_stats$reverse_complemented_fragment)
+  forward_frag_count <- length(orientation_stats$forward_fragment)
   unknown_count <- length(orientation_stats$unknown)
-  total_seqs <- forward_count + reverse_count + unknown_count
+  total_seqs <- forward_count + reverse_count + reverse_frag_count + forward_frag_count + unknown_count
   
   cat("SUMMARY:\n")
   cat("  Total sequences: ", total_seqs, "\n")
-  cat("  ✓ Forward orientation (kept as-is): ", forward_count, "\n")
-  cat("  ↻ Reverse complemented: ", reverse_count, "\n")
+  cat("  ✓ Forward (complete): ", forward_count, "\n")
+  cat("  ✓ Forward fragments: ", forward_frag_count, "\n")
+  cat("  ↻ Reverse complemented (complete): ", reverse_count, "\n")
+  cat("  ↻ Reverse complemented (fragments): ", reverse_frag_count, "\n")
   cat("  ? Unknown orientation: ", unknown_count, "\n\n")
+  
+  if (forward_count > 0) {
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    cat("FORWARD SEQUENCES (", forward_count, "):\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (item in orientation_stats$forward) {
+      cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+    }
+    cat("\n")
+  }
+  
+  if (forward_frag_count > 0) {
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    cat("FORWARD FRAGMENTS (", forward_frag_count, "):\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (item in orientation_stats$forward_fragment) {
+      cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+    }
+    cat("\n")
+  }
   
   if (reverse_count > 0) {
     cat(paste(rep("-", 80), collapse = ""), "\n")
-    cat("REVERSE COMPLEMENTED SEQUENCES (", reverse_count, "):\n")
+    cat("REVERSE COMPLEMENTED (", reverse_count, "):\n")
     cat(paste(rep("-", 80), collapse = ""), "\n")
     for (item in orientation_stats$reverse_complemented) {
       cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
-      cat("      (Rev@start: ", item$rev_start, ", Fwd@end: ", item$fwd_end, ")\n", sep = "")
+    }
+    cat("\n")
+  }
+  
+  if (reverse_frag_count > 0) {
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    cat("REVERSE COMPLEMENTED FRAGMENTS (", reverse_frag_count, "):\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (item in orientation_stats$reverse_complemented_fragment) {
+      cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
     }
     cat("\n")
   }
   
   if (unknown_count > 0) {
     cat(paste(rep("-", 80), collapse = ""), "\n")
-    cat("UNKNOWN ORIENTATION SEQUENCES (", unknown_count, "):\n")
+    cat("UNKNOWN ORIENTATION (", unknown_count, "):\n")
     cat(paste(rep("-", 80), collapse = ""), "\n")
     for (item in orientation_stats$unknown) {
       cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
-      cat("      (Fwd@start: ", item$fwd_start, ", Rev@end: ", item$rev_end, 
-          ", Rev@start: ", item$rev_start, ", Fwd@end: ", item$fwd_end, ")\n", sep = "")
     }
     cat("\n")
   }
