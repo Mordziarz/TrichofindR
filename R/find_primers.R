@@ -737,7 +737,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   message("Analysis of all loci completed.")
   
-  
   message("Reading sequences for orientation and combining...")
   
   output_dir <- "IMLDTS_identification"
@@ -782,6 +781,38 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   message("All sequences read. Now orienting and combining...")
   
+  find_primer_position <- function(seq_dna, primers, tolerance = 1, position = "start", window = 150) {
+    """
+    Szuka primeru w sekwencji z tolerancją na mismatche
+    position: "start" - szuka na początku, "end" - szuka na końcu
+    Zwraca TRUE jeśli znaleziono primer, FALSE jeśli nie
+    """
+    
+    if (is.null(primers) || length(primers) == 0) return(FALSE)
+    
+    seq_len <- nchar(seq_dna)
+    
+    for (primer in primers) {
+      primer_len <- nchar(primer)
+      
+      if (position == "start") {
+        search_region <- Biostrings::subseq(seq_dna, 1, min(window, seq_len))
+      } else {
+        start_pos <- max(1, seq_len - window + 1)
+        search_region <- Biostrings::subseq(seq_dna, start_pos, seq_len)
+      }
+      
+      for (mm in 0:tolerance) {
+        matches <- Biostrings::matchPattern(primer, search_region, max.mismatch = mm)
+        if (length(matches) > 0) {
+          return(TRUE)
+        }
+      }
+    }
+    
+    return(FALSE)
+  }
+  
   concatenated_sequence <- ""
   locus_info <- character()
   oriented_count <- list()
@@ -803,58 +834,24 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    fwd_at_start <- FALSE
-    rev_at_end <- FALSE
+    fwd_at_start <- find_primer_position(seq_dna, fwd_primers, tolerance = 1, position = "start", window = 150)
     
-    for (fwd in fwd_primers) {
-      matches_start <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
-      if (length(matches_start) > 0) {
-        if (start(matches_start)[1] <= 100) {
-          fwd_at_start <- TRUE
-          break
-        }
-      }
-    }
+    rev_at_end <- find_primer_position(seq_dna, rev_primers, tolerance = 1, position = "end", window = 150)
     
-    for (rev in rev_primers) {
-      matches_end <- Biostrings::matchPattern(rev, seq_dna, max.mismatch = 1)
-      if (length(matches_end) > 0) {
-        seq_len <- nchar(seq_char)
-        if (end(matches_end)[length(matches_end)] >= seq_len - 100) {
-          rev_at_end <- TRUE
-          break
-        }
-      }
-    }
+    rev_at_start <- find_primer_position(seq_dna, rev_primers, tolerance = 1, position = "start", window = 150)
     
-    rev_at_start <- FALSE
-    fwd_at_end <- FALSE
-    
-    for (rev in rev_primers) {
-      matches_start <- Biostrings::matchPattern(rev, seq_dna, max.mismatch = 1)
-      if (length(matches_start) > 0) {
-        if (start(matches_start)[1] <= 100) {
-          rev_at_start <- TRUE
-          break
-        }
-      }
-    }
-    
-    for (fwd in fwd_primers) {
-      matches_end <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
-      if (length(matches_end) > 0) {
-        seq_len <- nchar(seq_char)
-        if (end(matches_end)[length(matches_end)] >= seq_len - 100) {
-          fwd_at_end <- TRUE
-          break
-        }
-      }
-    }
+    fwd_at_end <- find_primer_position(seq_dna, fwd_primers, tolerance = 1, position = "end", window = 150)
     
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
       orientation <- "forward"
     } else if (rev_at_start && fwd_at_end) {
+      final_seq <- seq_rc
+      orientation <- "reverse_complemented"
+    } else if (fwd_at_start && !rev_at_end && !rev_at_start) {
+      final_seq <- seq_char
+      orientation <- "forward" 
+    } else if (rev_at_start && !fwd_at_end && !fwd_at_start) {
       final_seq <- seq_rc
       orientation <- "reverse_complemented"
     } else {
@@ -867,7 +864,11 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     }
     orientation_stats[[orientation]][[length(orientation_stats[[orientation]]) + 1]] <- list(
       locus = locus_name,
-      seq_id = seq_id
+      seq_id = seq_id,
+      fwd_start = fwd_at_start,
+      rev_end = rev_at_end,
+      rev_start = rev_at_start,
+      fwd_end = fwd_at_end
     )
     
     concatenated_sequence <- paste0(concatenated_sequence, final_seq)
@@ -907,6 +908,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     cat(paste(rep("-", 80), collapse = ""), "\n")
     for (item in orientation_stats$reverse_complemented) {
       cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+      cat("      (Rev@start: ", item$rev_start, ", Fwd@end: ", item$fwd_end, ")\n", sep = "")
     }
     cat("\n")
   }
@@ -917,12 +919,13 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     cat(paste(rep("-", 80), collapse = ""), "\n")
     for (item in orientation_stats$unknown) {
       cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+      cat("      (Fwd@start: ", item$fwd_start, ", Rev@end: ", item$rev_end, 
+          ", Rev@start: ", item$rev_start, ", Fwd@end: ", item$fwd_end, ")\n", sep = "")
     }
     cat("\n")
   }
   
   cat(paste(rep("=", 80), collapse = ""), "\n\n")
-  
   
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
