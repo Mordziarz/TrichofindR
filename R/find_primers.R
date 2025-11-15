@@ -679,17 +679,6 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Invisibly returns path to the combined FASTA file.
 #' Creates IMLDTS_identification folder with combined FASTA inside.
 #'
-#' @examples
-#' \dontrun{
-#' # Run with default genome file
-#' IMLDTS_identification()
-#'
-#' # Run with custom genome file
-#' IMLDTS_identification(
-#'   genome_file = "/path/to/custom/genome.fasta"
-#' )
-#' }
-#'
 #' @seealso
 #' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
 #'
