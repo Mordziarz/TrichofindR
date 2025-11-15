@@ -671,6 +671,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' into a single FASTA file for TrichofindR database comparison.
 #' Excludes TUB2 due to duplication in Trichoderma genomes.
 #' Creates IMLDTS_identification folder containing the combined FASTA.
+#' Sequences are oriented so they always run from forward to reverse primer.
 #'
 #' @param genome_file Character string specifying the path to the genome FASTA file.
 #'
@@ -755,20 +756,39 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             seq <- sequences[[i]]
             seq_char <- as.character(seq)
             
-            fwd_primer <- loci[[locus_name]]$forward[1]
-            rev_primer <- loci[[locus_name]]$reverse[1]
+            fwd_primers <- loci[[locus_name]]$forward
             
             seq_rc <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(seq_char)))
-
-            if (grepl(substr(fwd_primer, 1, 10), seq_char, ignore.case = TRUE)) {
+            
+            
+            found_in_original <- FALSE
+            found_in_rc <- FALSE
+            
+            for (fwd in fwd_primers) {
+              if (grepl(fwd, seq_char, ignore.case = TRUE)) {
+                found_in_original <- TRUE
+                break
+              }
+            }
+            
+            if (!found_in_original) {
+              for (fwd in fwd_primers) {
+                if (grepl(fwd, seq_rc, ignore.case = TRUE)) {
+                  found_in_rc <- TRUE
+                  break
+                }
+              }
+            }
+            
+            if (found_in_original) {
               final_seq <- seq_char
               message("  Sequence ", i, " from ", locus_name, ": kept as-is (forward orientation)")
-            } else if (grepl(substr(fwd_primer, 1, 10), seq_rc, ignore.case = TRUE)) {
+            } else if (found_in_rc) {
               final_seq <- seq_rc
               message("  Sequence ", i, " from ", locus_name, ": reverse complemented")
             } else {
               final_seq <- seq_char
-              message("  Sequence ", i, " from ", locus_name, ": kept as-is (no clear orientation)")
+              message("  Sequence ", i, " from ", locus_name, ": kept as-is (WARNING: no primer match - check amplicon)")
             }
             
             oriented_sequences[[i]] <- Biostrings::DNAString(final_seq)
