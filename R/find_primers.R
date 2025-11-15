@@ -697,7 +697,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'   are empty.
 #'
 
-find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 2) {
+  find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 1) {
     
     if (is.null(primers) || length(primers) == 0) return(FALSE)
     
@@ -719,15 +719,19 @@ find_primer_smart <- function(seq_dna, primers, position = "start", tolerance = 
       
       search_region <- Biostrings::subseq(seq_dna, start_pos, end_pos)
       
-      for (mm in 0:tolerance) {
-        tryCatch({
-          matches <- Biostrings::matchPattern(primer, search_region, max.mismatch = mm)
-          if (length(matches) > 0) {
-            return(TRUE)
-          }
-        }, error = function(e) {
-          return(FALSE)
-        })
+      primers_to_try <- c(primer, as.character(Biostrings::reverseComplement(Biostrings::DNAString(primer))))
+      
+      for (p in primers_to_try) {
+        for (mm in 0:tolerance) {
+          tryCatch({
+            matches <- Biostrings::matchPattern(p, search_region, max.mismatch = mm)
+            if (length(matches) > 0) {
+              return(TRUE)
+            }
+          }, error = function(e) {
+            return(FALSE)
+          })
+        }
       }
     }
     
@@ -852,6 +856,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   message("All sequences read. Now orienting and combining...")
   
+
+  
   concatenated_sequence <- ""
   locus_info <- character()
   oriented_count <- list()
@@ -881,7 +887,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
     rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
     fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
-    
+
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
       orientation <- "forward"
@@ -1023,3 +1029,4 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   message("  Individual locus folders: ", paste(locus_folders, collapse = ", "))
   invisible(file.path(output_dir, paste0(genome_basename, "_ultra.fasta")))
 }
+
