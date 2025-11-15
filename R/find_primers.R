@@ -696,8 +696,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     TEF3 = TEF3,
     LNS2 = LNS2,
     ACT = ACT,
-    PGK = PGK,
-    ITS = ITS
+    PGK = PGK
   )
   
   common_params <- list(
@@ -739,8 +738,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
     LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
     ACT = list(forward = ACT_F, reverse = ACT_R),
-    PGK = list(forward = PGK_F, reverse = PGK_R),
-    ITS = list(forward = ITS_F, reverse = ITS_R)
+    PGK = list(forward = PGK_F, reverse = PGK_R)
   )
   
   message("Reading sequences for orientation and combining...")
