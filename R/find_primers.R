@@ -675,19 +675,8 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @param genome_file Character string specifying the path to the genome FASTA file.
 #'
 #' @return
-#' Invisibly returns path to the combined FASTA file (ultra.fasta).
-#' Creates IMLDTS_identification folder with ultra.fasta inside.
-#'
-#' @examples
-#' \dontrun{
-#' # Run with default genome file
-#' create_IMLDTS_identification()
-#'
-#' # Run with custom genome file
-#' create_IMLDTS_identification(
-#'   genome_file = "/path/to/custom/genome.fasta"
-#' )
-#' }
+#' Invisibly returns path to the combined FASTA file.
+#' Creates IMLDTS_identification folder with combined FASTA inside.
 #'
 #' @seealso
 #' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
@@ -696,19 +685,18 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'
 #' @export
 #'
-
-IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta"){
-
-genome_basename <- tools::file_path_sans_ext(basename(genome_file))
-
+IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
+  
+  genome_basename <- tools::file_path_sans_ext(basename(genome_file))
+  
   loci <- list(
-    TEF1 = TEF1,
-    RPB2 = RPB2,
-    TEF3 = TEF3,
-    LNS2 = LNS2,
-    ACT = ACT,
-    PGK = PGK,
-    ITS = ITS
+    TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
+    RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
+    TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
+    LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
+    ACT = list(forward = ACT_F, reverse = ACT_R),
+    PGK = list(forward = PGK_F, reverse = PGK_R),
+    ITS = list(forward = ITS_F, reverse = ITS_R)
   )
   
   common_params <- list(
@@ -728,8 +716,8 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
     message("Analyzing: ", locus_name)
     
     results <- analyze_trichoderma_genome(
-      forward_primers = loci[[locus_name]],
-      reverse_primers = loci[[locus_name]],
+      forward_primers = loci[[locus_name]]$forward,
+      reverse_primers = loci[[locus_name]]$reverse,
       output_dir = paste0(locus_name, "_results"),
       max_mismatch = common_params$max_mismatch,
       max_amplicon_length = common_params$max_amplicon_length,
@@ -742,16 +730,15 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
     locus_folders <- c(locus_folders, paste0(locus_name, "_results"))
   }
   
-  message("All loci analyzed. Combining sequences...")
+  message("All loci analyzed. Combining and orienting sequences...")
   
   output_dir <- "IMLDTS_identification"
   if (!dir.exists(output_dir)) {
     dir.create(output_dir)
   }
   
-  concatenated_sequence <- ""
+  concatenated_sequences <- list()
   locus_info <- character()
-  total_bp <- 0
   
   for (locus_folder in locus_folders) {
     fasta_file <- file.path(locus_folder, "amplicons_with_primers.fasta")
@@ -762,18 +749,37 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
         
         if (length(sequences) > 0) {
           locus_name <- sub("_results", "", locus_folder)
+          oriented_sequences <- list()
           
           for (i in seq_along(sequences)) {
-            current_seq <- as.character(sequences[[i]])
-            concatenated_sequence <- paste0(concatenated_sequence, current_seq)
-            seq_length <- nchar(current_seq)
-            total_bp <- total_bp + seq_length
+            seq <- sequences[[i]]
+            seq_char <- as.character(seq)
             
-            locus_info <- c(locus_info, paste0(locus_name, "_", seq_length, "bp"))
+            fwd_primer <- loci[[locus_name]]$forward[1]
+            rev_primer <- loci[[locus_name]]$reverse[1]
+            
+            seq_rc <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(seq_char)))
+
+            if (grepl(substr(fwd_primer, 1, 10), seq_char, ignore.case = TRUE)) {
+              final_seq <- seq_char
+              message("  Sequence ", i, " from ", locus_name, ": kept as-is (forward orientation)")
+            } else if (grepl(substr(fwd_primer, 1, 10), seq_rc, ignore.case = TRUE)) {
+              final_seq <- seq_rc
+              message("  Sequence ", i, " from ", locus_name, ": reverse complemented")
+            } else {
+              final_seq <- seq_char
+              message("  Sequence ", i, " from ", locus_name, ": kept as-is (no clear orientation)")
+            }
+            
+            oriented_sequences[[i]] <- Biostrings::DNAString(final_seq)
           }
           
-          message("Added ", length(sequences), " sequences from ", locus_folder, " (", 
-                  sum(nchar(as.character(sequences))), " bp total)")
+          total_bp_locus <- sum(nchar(sapply(oriented_sequences, as.character)))
+          concatenated_sequences[[locus_name]] <- oriented_sequences
+          locus_info <- c(locus_info, paste0(locus_name, "_", total_bp_locus, "bp"))
+          
+          message("Added ", length(oriented_sequences), " oriented sequences from ", locus_name, " (", 
+                  total_bp_locus, " bp total)")
         }
       }, error = function(e) {
         warning("Could not read FASTA from ", fasta_file, ": ", e$message)
@@ -783,14 +789,18 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
     }
   }
   
-  if (nchar(concatenated_sequence) > 0) {
+  if (length(concatenated_sequences) > 0) {
+    all_seqs <- unlist(concatenated_sequences)
+    final_concatenated <- paste(sapply(all_seqs, as.character), collapse = "")
+    total_bp <- nchar(final_concatenated)
+    
     header <- paste0(genome_basename, "_IMLDTS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
                      paste(locus_info, collapse=" + "))
     
-    final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
+    final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(final_concatenated))
     names(final_sequences) <- header
     
-    output_fasta <- file.path(output_dir, paste0(genome_basename,"_ultra.fasta"))
+    output_fasta <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
     Biostrings::writeXStringSet(final_sequences, output_fasta)
     
     message("\nCombined FASTA written to: ", output_fasta)
@@ -802,7 +812,7 @@ genome_basename <- tools::file_path_sans_ext(basename(genome_file))
     return(NULL)
   }
   
-  message("\nIMIDS identification complete!")
+  message("\nIMDTS identification complete!")
   message("Individual locus folders preserved: ", paste(locus_folders, collapse = ", "))
-  invisible(file.path(output_dir, "ultra.fasta"))
+  invisible(file.path(output_dir, paste0(genome_basename, "_ultra.fasta")))
 }
