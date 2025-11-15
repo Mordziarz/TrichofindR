@@ -1012,10 +1012,10 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
     
-    forward_total <- sum(sapply(orientation_stats$forward, function(x) 1))
-    reverse_total <- sum(sapply(orientation_stats$reverse_complemented, function(x) 1))
-    reverse_frag_total <- sum(sapply(orientation_stats$reverse_complemented_fragment, function(x) 1))
-    forward_frag_total <- sum(sapply(orientation_stats$forward_fragment, function(x) 1))
+    forward_total <- length(orientation_stats$forward)
+    reverse_total <- length(orientation_stats$reverse_complemented)
+    reverse_frag_total <- length(orientation_stats$reverse_complemented_fragment)
+    forward_frag_total <- length(orientation_stats$forward_fragment)
     
     orientation_summary <- paste0(
       "Forward:", forward_total, 
