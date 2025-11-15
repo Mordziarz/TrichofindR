@@ -782,12 +782,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   message("All sequences read. Now orienting and combining...")
   
   find_primer_position <- function(seq_dna, primers, tolerance = 1, position = "start", window = 150) {
-    """
-    Szuka primeru w sekwencji z tolerancją na mismatche
-    position: "start" - szuka na początku, "end" - szuka na końcu
-    Zwraca TRUE jeśli znaleziono primer, FALSE jeśli nie
-    """
-    
+
     if (is.null(primers) || length(primers) == 0) return(FALSE)
     
     seq_len <- nchar(seq_dna)
