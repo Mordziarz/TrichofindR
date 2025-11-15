@@ -811,7 +811,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    # Check orientation based on forward primers
     found_in_original <- FALSE
     
     for (fwd in fwd_primers) {
