@@ -667,11 +667,11 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Combine Trichoderma Amplicons into Single FASTA
 #'
 #' @description
-#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, and PGK loci
+#' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK loci
 #' into a single FASTA file for TrichofindR database comparison.
-#' Excludes TUB2 due to duplication in Trichoderma genomes.
-#' ITS was also excluded from this analysis
+#' Excludes TUB2 and ITS.
 #' Sequences are oriented (forward to reverse primer) based on forward/reverse primer matching.
+#' Reports which sequences were reverse complemented.
 #'
 #' @param genome_file Character string specifying the path to the genome FASTA file.
 #'
@@ -679,14 +679,8 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Invisibly returns path to the combined FASTA file.
 #' Creates IMLDTS_identification folder with combined FASTA inside.
 #'
-#' @examples
-#' \dontrun{
-#' IMLDTS_identification(genome_file = "/path/to/genome.fasta")
-#' }
-#'
 #' @export
 #'
-
 IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
@@ -698,6 +692,15 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     LNS2 = LNS2,
     ACT = ACT,
     PGK = PGK
+  )
+  
+  loci_primers <- list(
+    TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
+    RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
+    TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
+    LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
+    ACT = list(forward = ACT_F, reverse = ACT_R),
+    PGK = list(forward = PGK_F, reverse = PGK_R)
   )
   
   common_params <- list(
@@ -733,14 +736,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   message("Analysis of all loci completed.")
   
-  loci_primers <- list(
-    TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
-    RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
-    TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
-    LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
-    ACT = list(forward = ACT_F, reverse = ACT_R),
-    PGK = list(forward = PGK_F, reverse = PGK_R)
-  )
   
   message("Reading sequences for orientation and combining...")
   
@@ -769,7 +764,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
               sequence = seq_char,
               locus_name = locus_name,
               forward_primers = loci_primers[[locus_name]]$forward,
-              reverse_primers = loci_primers[[locus_name]]$reverse
+              reverse_primers = loci_primers[[locus_name]]$reverse,
+              seq_id = names(seq) 
             )
           }
           
@@ -789,10 +785,17 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   locus_info <- character()
   oriented_count <- list()
   
+  orientation_stats <- list(
+    forward = list(),
+    reverse_complemented = list(),
+    unknown = list()
+  )
+  
   for (seq_data in all_sequences_data) {
     seq_char <- seq_data$sequence
     locus_name <- seq_data$locus_name
-    fwd_primers <- seq_data$forward_primers
+    seq_id <- seq_data$seq_id
+    fwd_primers <- seq_data$forward_primers 
     
     seq_dna <- Biostrings::DNAString(seq_char)
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
@@ -813,6 +816,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       orientation <- "forward"
     } else {
       found_in_rc <- FALSE
+      
       for (fwd in fwd_primers) {
         matches_rc <- Biostrings::matchPattern(fwd, seq_rc_dna, max.mismatch = 1)
         if (length(matches_rc) > 0) {
@@ -830,6 +834,14 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       }
     }
     
+    if (is.null(orientation_stats[[orientation]])) {
+      orientation_stats[[orientation]] <- list()
+    }
+    orientation_stats[[orientation]][[length(orientation_stats[[orientation]]) + 1]] <- list(
+      locus = locus_name,
+      seq_id = seq_id
+    )
+    
     concatenated_sequence <- paste0(concatenated_sequence, final_seq)
     seq_length <- nchar(final_seq)
     
@@ -838,14 +850,50 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     }
     oriented_count[[locus_name]]$count <- oriented_count[[locus_name]]$count + 1
     oriented_count[[locus_name]]$bp <- oriented_count[[locus_name]]$bp + seq_length
-    
-    message("  ", locus_name, " (", seq_length, "bp): ", orientation)
   }
   
   for (locus_name in names(oriented_count)) {
     locus_info <- c(locus_info, 
                     paste0(locus_name, "_", oriented_count[[locus_name]]$bp, "bp"))
   }
+  
+  cat("\n")
+  cat(paste(rep("=", 80), collapse = ""), "\n")
+  cat("SEQUENCE ORIENTATION REPORT\n")
+  cat(paste(rep("=", 80), collapse = ""), "\n\n")
+  
+  forward_count <- length(orientation_stats$forward)
+  reverse_count <- length(orientation_stats$reverse_complemented)
+  unknown_count <- length(orientation_stats$unknown)
+  total_seqs <- forward_count + reverse_count + unknown_count
+  
+  cat("SUMMARY:\n")
+  cat("  Total sequences: ", total_seqs, "\n")
+  cat("  ✓ Forward orientation (kept as-is): ", forward_count, "\n")
+  cat("  ↻ Reverse complemented: ", reverse_count, "\n")
+  cat("  ? Unknown orientation: ", unknown_count, "\n\n")
+  
+  if (reverse_count > 0) {
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    cat("REVERSE COMPLEMENTED SEQUENCES (", reverse_count, "):\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (item in orientation_stats$reverse_complemented) {
+      cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+    }
+    cat("\n")
+  }
+  
+  if (unknown_count > 0) {
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    cat("UNKNOWN ORIENTATION SEQUENCES (", unknown_count, "):\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (item in orientation_stats$unknown) {
+      cat("  • ", item$locus, ": ", item$seq_id, "\n", sep = "")
+    }
+    cat("\n")
+  }
+  
+  cat(paste(rep("=", 80), collapse = ""), "\n\n")
   
   
   if (nchar(concatenated_sequence) > 0) {
@@ -860,7 +908,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     output_fasta <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
     Biostrings::writeXStringSet(final_sequences, output_fasta)
     
-    message("\n✓ Combined and oriented FASTA written to: ", output_fasta)
+    message("✓ Combined and oriented FASTA written to: ", output_fasta)
     message("  Total concatenated sequence: ", total_bp, " bp")
     message("  Header: ", header)
   } else {
