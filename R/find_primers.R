@@ -686,6 +686,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #'
 #' @export
 #'
+
 IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
@@ -755,17 +756,20 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
           for (i in seq_along(sequences)) {
             seq <- sequences[[i]]
             seq_char <- as.character(seq)
+            seq_dna <- Biostrings::DNAString(seq_char)
             
             fwd_primers <- loci[[locus_name]]$forward
             
-            seq_rc <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(seq_char)))
+            seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
+            seq_rc_dna <- Biostrings::DNAString(seq_rc)
             
             
             found_in_original <- FALSE
             found_in_rc <- FALSE
             
             for (fwd in fwd_primers) {
-              if (grepl(fwd, seq_char, ignore.case = TRUE)) {
+              matches_original <- Biostrings::matchPattern(fwd, seq_dna, max.mismatch = 1)
+              if (length(matches_original) > 0) {
                 found_in_original <- TRUE
                 break
               }
@@ -773,7 +777,8 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             
             if (!found_in_original) {
               for (fwd in fwd_primers) {
-                if (grepl(fwd, seq_rc, ignore.case = TRUE)) {
+                matches_rc <- Biostrings::matchPattern(fwd, seq_rc_dna, max.mismatch = 1)
+                if (length(matches_rc) > 0) {
                   found_in_rc <- TRUE
                   break
                 }
