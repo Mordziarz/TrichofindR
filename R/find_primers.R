@@ -670,8 +670,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Combines amplicons from TEF1, RPB2, TEF3, LNS2, ACT, PGK, and ITS loci
 #' into a single FASTA file for TrichofindR database comparison.
 #' Excludes TUB2 due to duplication in Trichoderma genomes.
-#' Creates IMLDTS_identification folder containing the combined FASTA.
-#' Sequences are oriented (forward to reverse primer) only when saving ultra.fasta.
+#' Sequences are oriented (forward to reverse primer) based on forward/reverse primer matching.
 #'
 #' @param genome_file Character string specifying the path to the genome FASTA file.
 #'
@@ -679,10 +678,10 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' Invisibly returns path to the combined FASTA file.
 #' Creates IMLDTS_identification folder with combined FASTA inside.
 #'
-#' @seealso
-#' \code{\link{analyze_trichoderma_genome}} for the underlying analysis function
-#'
-#' @keywords internal
+#' @examples
+#' \dontrun{
+#' IMLDTS_identification(genome_file = "/path/to/genome.fasta")
+#' }
 #'
 #' @export
 #'
@@ -699,16 +698,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     ACT = ACT_F,
     PGK = PGK_F,
     ITS = ITS_F
-  )
-  
-  loci_primers <- list(
-    TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
-    RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
-    TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
-    LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
-    ACT = list(forward = ACT_F, reverse = ACT_R),
-    PGK = list(forward = PGK_F, reverse = PGK_R),
-    ITS = list(forward = ITS_F, reverse = ITS_R)
   )
   
   common_params <- list(
@@ -743,7 +732,18 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   message("Analysis of all loci completed.")
-  message("All loci analyzed. Reading sequences for combining...")
+  
+  loci_primers <- list(
+    TEF1 = list(forward = TEF1_F, reverse = TEF1_R),
+    RPB2 = list(forward = RPB2_F, reverse = RPB2_R),
+    TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
+    LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
+    ACT = list(forward = ACT_F, reverse = ACT_R),
+    PGK = list(forward = PGK_F, reverse = PGK_R),
+    ITS = list(forward = ITS_F, reverse = ITS_R)
+  )
+  
+  message("Reading sequences for orientation and combining...")
   
   output_dir <- "IMLDTS_identification"
   if (!dir.exists(output_dir)) {
@@ -784,8 +784,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     }
   }
   
-  message("All loci read. Now orienting sequences and combining...")
-
+  message("All sequences read. Now orienting and combining...")
   
   concatenated_sequence <- ""
   locus_info <- character()
@@ -825,7 +824,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       
       if (found_in_rc) {
         final_seq <- seq_rc
-        orientation <- "reverse_complement"
+        orientation <- "reverse_complemented"
       } else {
         final_seq <- seq_char
         orientation <- "unknown"
@@ -849,6 +848,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
                     paste0(locus_name, "_", oriented_count[[locus_name]]$bp, "bp"))
   }
   
+  
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
     
@@ -861,16 +861,16 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     output_fasta <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
     Biostrings::writeXStringSet(final_sequences, output_fasta)
     
-    message("\nCombined and oriented FASTA written to: ", output_fasta)
-    message("Total concatenated sequence: ", total_bp, " bp")
-    message("Header: ", header)
+    message("\n✓ Combined and oriented FASTA written to: ", output_fasta)
+    message("  Total concatenated sequence: ", total_bp, " bp")
+    message("  Header: ", header)
   } else {
     warning("No sequences were combined!")
     invisible(NULL)
     return(NULL)
   }
   
-  message("\nIMDTS identification complete!")
-  message("Individual locus folders preserved: ", paste(locus_folders, collapse = ", "))
+  message("\n✓ IMLDTS identification complete!")
+  message("  Individual locus folders: ", paste(locus_folders, collapse = ", "))
   invisible(file.path(output_dir, paste0(genome_basename, "_ultra.fasta")))
 }
