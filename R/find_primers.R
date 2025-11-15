@@ -819,6 +819,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   all_sequences_data <- list()
+  trichoderma_species <- NULL
   
   for (locus_folder in locus_folders) {
     fasta_file <- file.path(locus_folder, "amplicons_with_primers.fasta")
@@ -834,6 +835,13 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
             seq <- sequences[[i]]
             seq_char <- as.character(seq)
             header <- names(seq)
+            
+            if (is.null(trichoderma_species)) {
+              species_match <- regmatches(header, regexpr("Trichoderma\\s+\\w+", header))
+              if (length(species_match) > 0) {
+                trichoderma_species <- gsub(" ", "_", species_match[1])
+              }
+            }
             
             all_sequences_data[[length(all_sequences_data) + 1]] <- list(
               sequence = seq_char,
@@ -855,8 +863,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   }
   
   message("All sequences read. Now orienting and combining...")
-  
-
   
   concatenated_sequence <- ""
   locus_info <- character()
@@ -882,12 +888,11 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
     
-    
     fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 1)
     rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
     rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
     fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
-
+    
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
       orientation <- "forward"
@@ -1007,8 +1012,34 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
     
-    header <- paste0(genome_basename, "_IMLDTS_ultra | Concatenated_", total_bp, "bp | Loci: ", 
-                     paste(locus_info, collapse=" + "))
+    forward_total <- sum(sapply(orientation_stats$forward, function(x) 1))
+    reverse_total <- sum(sapply(orientation_stats$reverse_complemented, function(x) 1))
+    reverse_frag_total <- sum(sapply(orientation_stats$reverse_complemented_fragment, function(x) 1))
+    forward_frag_total <- sum(sapply(orientation_stats$forward_fragment, function(x) 1))
+    
+    orientation_summary <- paste0(
+      "Forward:", forward_total, 
+      " | RC:", reverse_total,
+      if (forward_frag_total > 0) paste0(" | Fwd_frag:", forward_frag_total) else "",
+      if (reverse_frag_total > 0) paste0(" | RC_frag:", reverse_frag_total) else ""
+    )
+    
+    locus_details <- paste(locus_info, collapse=" + ")
+    
+    species_info <- if (!is.null(trichoderma_species)) {
+      paste0(" | ", trichoderma_species)
+    } else {
+      ""
+    }
+    
+    header <- paste0(
+      genome_basename, "_IMLDTS_ultra",
+      species_info,
+      " | ",
+      locus_details, " | ",
+      "Total_concatenated:", total_bp, "bp | ",
+      orientation_summary
+    )
     
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
@@ -1018,6 +1049,7 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     
     message("✓ Combined and oriented FASTA written to: ", output_fasta)
     message("  Total concatenated sequence: ", total_bp, " bp")
+    message("  Trichoderma species: ", if (!is.null(trichoderma_species)) trichoderma_species else "Unknown")
     message("  Header: ", header)
   } else {
     warning("No sequences were combined!")
@@ -1029,4 +1061,5 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   message("  Individual locus folders: ", paste(locus_folders, collapse = ", "))
   invisible(file.path(output_dir, paste0(genome_basename, "_ultra.fasta")))
 }
+
 
