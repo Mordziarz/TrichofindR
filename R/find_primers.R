@@ -747,10 +747,6 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @param genome_file Character string specifying path to genome FASTA file.
 #'   The FASTA header should contain organism information.
 #'
-#' @param reference_sequences Named list of reference IMLDTS concatenated
-#'   sequences for species identification. Names should be species names 
-#'   (e.g., "Trichoderma_parareesei").
-#'
 #' @param identity_threshold Numeric specifying the minimum percent identity (0-100)
 #'   for BLAST matches. Defaults to 95.
 #'
@@ -763,7 +759,6 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 
 IMLDTS_identification <- function(
     genome_file = "/path/to/your/genome.fasta",
-    reference_sequences = IMLDTS_reference_sequences,
     identity_threshold = 95,
     max_target_seqs = 10) {
   
@@ -1071,8 +1066,8 @@ IMLDTS_identification <- function(
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
     
-    Biostrings::writeXStringSet(final_sequences, ultra_fasta_path)
     ultra_fasta_path <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
+    Biostrings::writeXStringSet(final_sequences, ultra_fasta_path)
 
     message("✓ Combined and oriented FASTA written to: ", ultra_fasta_path)
     message("  Organism name in header: ", organism_name)
