@@ -130,7 +130,7 @@ trichoderma_blast <- function(query_sequence = "",
 
   blast_result <- predict(blast_db, query_sequences)
 
-  results_aggregated <- results_blast %>%
+  results_aggregated <- blast_result %>%
   mutate(matching_nts = pident * length / 100) %>%
   group_by(qseqid, sseqid) %>%
   summarize(

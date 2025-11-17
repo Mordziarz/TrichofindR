@@ -766,6 +766,7 @@ IMLDTS_identification <- function(
     stop(paste("Genome file not found:", genome_file))
   }
   
+  
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   
   message("Reading genome FASTA header to extract organism name...")
@@ -820,6 +821,7 @@ IMLDTS_identification <- function(
   locus_folders <- c()
   
   message("Starting amplicon identification for IMLDTS loci...")
+  
   
   for (locus_name in names(loci)) {
     message("Analyzing: ", locus_name)
@@ -1085,57 +1087,55 @@ IMLDTS_identification <- function(
     )
     
     if (nrow(blast_results) > 0) {
-      high_identity_results <- blast_results[blast_results$pident > identity_threshold, ]
+      IMLDTS_results$blast_results <- blast_results %>%
+        dplyr::filter(average_pident_weighted > identity_threshold)
       
-      if (nrow(high_identity_results) > 0) {
-        IMLDTS_results$blast_results <- high_identity_results
-        cat("✓ Found", nrow(high_identity_results), "matches with >", identity_threshold, "% identity\n\n")
+      if (nrow(IMLDTS_results$blast_results) > 0) {
+        cat("✓ Found", nrow(IMLDTS_results$blast_results), "matches with >", identity_threshold, "% weighted average identity\n\n")
       } else {
-        IMLDTS_results$blast_results <- blast_results
-        cat("⚠ No matches above", identity_threshold, "% identity. Keeping all BLAST results.\n\n")
+        IMLDTS_results$blast_results <- blast_results 
+        cat("⚠ No matches above", identity_threshold, "% weighted average identity. Keeping all top results.\n\n")
       }
+    } else {
+        IMLDTS_results$blast_results <- data.frame()
     }
 
-    if (nrow(IMLDTS_results$blast_results) > 0) {
-      filtered_blast <- IMLDTS_results$blast_results %>%
-        dplyr::group_by(sseqid) %>%
-        dplyr::slice_max(order_by = length, with_ties = FALSE) %>%
-        dplyr::ungroup() %>%
-        dplyr::arrange(dplyr::desc(length), dplyr::desc(pident))
-      
-      IMLDTS_results$blast_results <- as.data.frame(filtered_blast)
-    }
 
     display_results <- IMLDTS_results$blast_results[1:min(max_target_seqs, nrow(IMLDTS_results$blast_results)), ]
     
-    cat("Top Species Matches (filtered - longest match per species):\n")
+    cat("Top Species Matches (Aggregated by Weighted Identity):\n")
     cat(paste(rep("-", 80), collapse = ""), "\n")
-    for (i in seq_len(nrow(display_results))) {
-      result <- display_results[i, ]
-      cat(sprintf("%2d. %-35s | Identity: %6.2f%% | Length: %5d bp\n",
-                  i, result$sseqid, result$pident, result$length))
+    
+    if (nrow(display_results) > 0) {
+      for (i in seq_len(nrow(display_results))) {
+        result <- display_results[i, ]
+        cat(sprintf("%2d. %-35s | Wgtd Identity: %6.2f%% | Total Length: %5d bp\n",
+                    i, result$sseqid, result$average_pident_weighted, result$total_length))
+      }
+    } else {
+       cat("  Brak trafień spełniających próg identyczności (> ", identity_threshold, "%).\n")
     }
     cat(paste(rep("-", 80), collapse = ""), "\n\n")
     
     if (nrow(IMLDTS_results$blast_results) > 0) {
-      high_confidence_results <- IMLDTS_results$blast_results[IMLDTS_results$blast_results$pident >= 99, ]
+      high_confidence_results <- IMLDTS_results$blast_results[IMLDTS_results$blast_results$average_pident_weighted >= 99, ]
       
       if (nrow(high_confidence_results) > 0) {
-        cat("High confidence matches:\n\n")
+        cat("High confidence matches (Weighted Identity >= 99%):\n\n")
         
         for (i in seq_len(nrow(high_confidence_results))) {
           match <- high_confidence_results[i, ]
-          cat("  ", i, ". ", match$sseqid, "\n")
+          cat("  ", i, ". ", match$sseqid, " (", sprintf("%.2f%%", match$average_pident_weighted), ")\n", sep="")
         }
         
         IMLDTS_results$final_identification <- high_confidence_results$sseqid
         
       } else {
-        cat("Probable matches:\n\n")
+        cat("Probable matches (Top weighted results):\n\n")
         
-        for (i in seq_len(nrow(IMLDTS_results$blast_results))) {
-          match <- IMLDTS_results$blast_results[i, ]
-          cat("  ", i, ". ", match$sseqid, "\n")
+        for (i in seq_len(nrow(display_results))) {
+          match <- display_results[i, ]
+          cat("  ", i, ". ", match$sseqid, " (", sprintf("%.2f%%", match$average_pident_weighted), ")\n", sep="")
         }
         
         IMLDTS_results$final_identification <- IMLDTS_results$blast_results$sseqid
