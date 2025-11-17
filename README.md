@@ -92,6 +92,8 @@ The trichoderma_blast() function allows you to perform a BLAST search against a 
 
 9. Ultra_fasta (IMLDTS_reference_sequences)
 
+I've implemented a critical change to how I process BLAST results within the trichoderma_blast function, shifting from a simple percent identity (pident) to a Length-Weighted Average Percent Identity. This modification was necessary because the standard BLAST output often fragments a single sequence match into multiple High-Scoring Segment Pairs (HSPs), meaning a simple arithmetic average of the % identities would be misleading. My new logic works in three steps: I first calculate the absolute number of matching nucleotides for each fragment (mutate(matching_nts = pident * length / 100)), which assigns a length-based weight. Then, I aggregate these results by species (sseqid), summing both the matching nucleotides and the total covered length for all fragments belonging to that species. Finally, I calculate the true weighted identity (average_pident_weighted = (total_matching_nts / total_length) * 100) by dividing the total matching nucleotides by the total covered length. This approach ensures that longer, more complete, and therefore more significant fragments have a proportionally greater impact on the final score, providing a more robust and biologically meaningful measure of similarity across the entire covered region.
+
 ```r
 results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
