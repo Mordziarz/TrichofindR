@@ -128,7 +128,7 @@ trichoderma_blast <- function(query_sequence = "",
     stop("No valid sequences found in query file")
   }
 
-  blast_result <- predict(blast_db, query_sequences, BLAST_args = "-task blastn -qcov_hsp_perc 100 -num_alignments 500 -num_descriptions 500")
+  blast_result <- predict(blast_db, query_sequences, BLAST_args = "-task blastn -qcov_hsp_perc 100 -perc_identity 80")
 
   return(blast_result)
 }
