@@ -90,6 +90,8 @@ The trichoderma_blast() function allows you to perform a BLAST search against a 
 
 8. PGK (PGK_reference_sequences)
 
+9. Ultra_fasta (IMLDTS_reference_sequences)
+
 ```r
 results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
