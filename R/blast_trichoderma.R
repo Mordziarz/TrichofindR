@@ -145,5 +145,5 @@ trichoderma_blast <- function(query_sequence = "",
   ) %>%
   arrange(desc(average_pident_weighted), desc(total_length))
 
-  return(blast_result)
+  return(results_aggregated)
 }
