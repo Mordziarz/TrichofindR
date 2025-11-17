@@ -747,7 +747,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @param genome_file Character string specifying path to genome FASTA file.
 #'   The FASTA header should contain organism information.
 #'
-#' @param IMLDTS_reference_sequences Named list of reference IMLDTS concatenated
+#' @param reference_sequences Named list of reference IMLDTS concatenated
 #'   sequences for species identification. Names should be species names 
 #'   (e.g., "Trichoderma_parareesei").
 #'
@@ -763,7 +763,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 
 IMLDTS_identification <- function(
     genome_file = "/path/to/your/genome.fasta",
-    IMLDTS_reference_sequences = IMLDTS_reference_sequences,
+    reference_sequences = IMLDTS_reference_sequences,
     identity_threshold = 95,
     max_target_seqs = 10) {
   
