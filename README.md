@@ -116,6 +116,6 @@ MATEK_identification$stage3_its
 The goal of this identification is to create a single FASTA file containing all amplicons and compare it against the TrichofindR database. I decided to exclude TUB2 because it always appears in two copies in Trichoderma genomes. ITS was also excluded from this analysis.
 
 ```r
-IMLDTS_identification <- IMLDTS_identification(genome_path = "your_genome_sequence.fasta")
+IMLDTS_identification <- IMLDTS_identification(genome_path = "your_genome_sequence.fasta",identity_threshold = 95,max_target_seqs = 10)
 
 ```

@@ -1081,7 +1081,7 @@ IMLDTS_identification <- function(
     
     blast_results <- trichoderma_blast(
       query_sequence = ultra_fasta_path,
-      reference_sequences = IMLDTS_reference_sequences
+      reference_sequences = IMLDTS_reference_sequences, BLAST_args = "-task blastn -word_size 4100"
     )
     
     if (nrow(blast_results) > 0) {
