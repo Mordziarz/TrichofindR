@@ -144,10 +144,10 @@ MATEK_identification <- function(
     
     if (nrow(high_identity_tef1) > 0) {
       stage1_results <- high_identity_tef1
-      cat("✓ Found", nrow(stage1_results), "matches with >", tef1_threshold, "% identity\n")
+      cat("✓ Found", nrow(stage1_results), "matches with >", tef1_threshold, "% weighted identity\n")
     } else {
       stage1_results <- stage1_results[1:min(5, nrow(stage1_results)), ]
-      cat("⚠ No matches above", tef1_threshold, "% identity. Keeping top 5 best matches.\n")
+      cat("⚠ No matches above", tef1_threshold, "% weighted identity. Keeping top 5 best matches.\n")
     }
   }
   
@@ -157,7 +157,11 @@ MATEK_identification <- function(
   MATEK_results$stage1_reference_ids <- stage1_reference_ids
   
   cat("\n--- Stage 1 Results (TEF1) ---\n")
-  print(stage1_results[, c("sseqid", "average_pident_weighted", "length")])
+  if (nrow(stage1_results) > 0) {
+    print(stage1_results[, c("sseqid", "average_pident_weighted", "total_length")])
+  } else {
+    cat("Brak wyników BLAST w Stage 1.\n")
+  }
   
   cat("\n[STAGE 2] Analyzing RPB2 (RNA Polymerase II Largest Subunit)...\n")
   
@@ -189,10 +193,10 @@ MATEK_identification <- function(
     
     if (nrow(high_identity_rpb2) > 0) {
       stage2_results <- high_identity_rpb2
-      cat("✓ Found", nrow(stage2_results), "matches with >", rpb2_threshold, "% identity\n")
+      cat("✓ Found", nrow(stage2_results), "matches with >", rpb2_threshold, "% weighted identity\n")
     } else {
       stage2_results <- stage2_results[1:min(5, nrow(stage2_results)), ]
-      cat("⚠ No matches above", rpb2_threshold, "% identity. Keeping top 5 best matches.\n")
+      cat("⚠ No matches above", rpb2_threshold, "% weighted identity. Keeping top 5 best matches.\n")
     }
   }
   
@@ -202,7 +206,11 @@ MATEK_identification <- function(
   MATEK_results$stage2_reference_ids <- stage2_reference_ids
   
   cat("\n--- Stage 2 Results (RPB2) ---\n")
-  print(stage2_results[, c("sseqid", "average_pident_weighted", "length")])
+  if (nrow(stage2_results) > 0) {
+    print(stage2_results[, c("sseqid", "average_pident_weighted", "total_length")])
+  } else {
+    cat("Brak wyników BLAST w Stage 2.\n")
+  }
   
   cat("\n[STAGE 3] Analyzing ITS (Internal Transcribed Spacer Region)...\n")
   
@@ -233,24 +241,25 @@ MATEK_identification <- function(
     high_identity_its <- stage3_results[stage3_results$average_pident_weighted > its_primary_threshold, ]
     
     if (nrow(high_identity_its) > 0) {
-      cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% identity\n")
+      cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% weighted identity\n")
       
       if (nrow(high_identity_its) > 2) {
         cat("  → More than 2 results found. Applying stricter threshold (>", its_secondary_threshold, "%)...\n")
+        
         stage3_results <- high_identity_its[high_identity_its$average_pident_weighted > its_secondary_threshold, ]
         
         if (nrow(stage3_results) == 0) {
           cat("  → No results at", its_secondary_threshold, "% threshold. Keeping", nrow(high_identity_its), "matches at", its_primary_threshold, "%.\n")
           stage3_results <- high_identity_its
         } else {
-          cat("  → Retained", nrow(stage3_results), "matches at", its_secondary_threshold, "% identity\n")
+          cat("  → Retained", nrow(stage3_results), "matches at", its_secondary_threshold, "% weighted identity\n")
         }
       } else {
-        cat("  → ", nrow(high_identity_its), "result(s) found. Keeping at", its_primary_threshold, "% threshold.\n")
+        cat("  → ", nrow(high_identity_its), "result(s) found. Keeping at", its_primary_threshold, "% weighted threshold.\n")
         stage3_results <- high_identity_its
       }
     } else {
-      cat("⚠ No matches above", its_primary_threshold, "% identity. Keeping top 5 best matches.\n")
+      cat("⚠ No matches above", its_primary_threshold, "% weighted identity. Keeping top 5 best matches.\n")
       stage3_results <- stage3_results[1:min(5, nrow(stage3_results)), ]
     }
   }
@@ -258,41 +267,44 @@ MATEK_identification <- function(
   MATEK_results$stage3_its <- stage3_results
 
   cat("\n--- Stage 3 Results (ITS) ---\n")
-  print(stage3_results[, c("sseqid", "average_pident_weighted", "length")])
-  
-cat("\n========== Final Identification ==========\n")
-
-if (nrow(stage3_results) > 0) {
-  high_confidence_results <- stage3_results[stage3_results$average_pident_weighted >= 99, ]
-  
-  if (nrow(high_confidence_results) > 0) {
-    cat("High confidence matches:\n\n")
-    
-    for (i in seq_len(nrow(high_confidence_results))) {
-      match <- high_confidence_results[i, ]
-      cat("  ", i, ". ", match$sseqid, "\n")
-    }
-    
-    MATEK_results$final_identification <- high_confidence_results$sseqid
-    
+  if (nrow(stage3_results) > 0) {
+    print(stage3_results[, c("sseqid", "average_pident_weighted", "total_length")])
   } else {
-    cat("Probable matches:\n\n")
-    
-    for (i in seq_len(nrow(stage3_results))) {
-      match <- stage3_results[i, ]
-      cat("  ", i, ". ", match$sseqid, "\n")
-    }
-    
-    MATEK_results$final_identification <- stage3_results$sseqid
+    cat("Brak wyników BLAST w Stage 3.\n")
   }
   
-} else {
-  MATEK_results$final_identification <- "No reliable Trichoderma identification found"
-  cat(MATEK_results$final_identification, "\n")
-}
+  cat("\n========== Final Identification ==========\n")
 
-cat("\n==================================================\n\n")
+  if (nrow(stage3_results) > 0) {
+    high_confidence_results <- stage3_results[stage3_results$average_pident_weighted >= 99, ]
+    
+    if (nrow(high_confidence_results) > 0) {
+      cat("High confidence matches (Weighted Identity >= 99%):\n\n")
+      
+      for (i in seq_len(nrow(high_confidence_results))) {
+        match <- high_confidence_results[i, ]
+        cat("  ", i, ". ", match$sseqid, " (", sprintf("%.2f%%", match$average_pident_weighted), ")\n", sep="")
+      }
+      
+      MATEK_results$final_identification <- high_confidence_results$sseqid
+      
+    } else {
+      cat("Probable matches (Top weighted results):\n\n")
+      
+      for (i in seq_len(nrow(stage3_results))) {
+        match <- stage3_results[i, ]
+        cat("  ", i, ". ", match$sseqid, " (", sprintf("%.2f%%", match$average_pident_weighted), ")\n", sep="")
+      }
+      
+      MATEK_results$final_identification <- stage3_results$sseqid
+    }
+    
+  } else {
+    MATEK_results$final_identification <- "No reliable Trichoderma identification found"
+    cat(MATEK_results$final_identification, "\n")
+  }
 
-return(MATEK_results)
+  cat("\n==================================================\n\n")
 
+  return(MATEK_results)
 }
