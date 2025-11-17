@@ -1071,9 +1071,9 @@ IMLDTS_identification <- function(
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
     
-    ultra_fasta_path <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
     Biostrings::writeXStringSet(final_sequences, ultra_fasta_path)
-    
+    ultra_fasta_path <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
+
     message("✓ Combined and oriented FASTA written to: ", ultra_fasta_path)
     message("  Organism name in header: ", organism_name)
     message("  Total concatenated sequence: ", total_bp, " bp")
