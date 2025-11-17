@@ -140,7 +140,7 @@ MATEK_identification <- function(
   )
   
   if (nrow(stage1_results) > 0) {
-    high_identity_tef1 <- stage1_results[stage1_results$pident > tef1_threshold, ]
+    high_identity_tef1 <- stage1_results[stage1_results$average_pident_weighted > tef1_threshold, ]
     
     if (nrow(high_identity_tef1) > 0) {
       stage1_results <- high_identity_tef1
@@ -157,7 +157,7 @@ MATEK_identification <- function(
   MATEK_results$stage1_reference_ids <- stage1_reference_ids
   
   cat("\n--- Stage 1 Results (TEF1) ---\n")
-  print(stage1_results[, c("sseqid", "pident", "length")])
+  print(stage1_results[, c("sseqid", "average_pident_weighted", "length")])
   
   cat("\n[STAGE 2] Analyzing RPB2 (RNA Polymerase II Largest Subunit)...\n")
   
@@ -185,7 +185,7 @@ MATEK_identification <- function(
   )
   
   if (nrow(stage2_results) > 0) {
-    high_identity_rpb2 <- stage2_results[stage2_results$pident > rpb2_threshold, ]
+    high_identity_rpb2 <- stage2_results[stage2_results$average_pident_weighted > rpb2_threshold, ]
     
     if (nrow(high_identity_rpb2) > 0) {
       stage2_results <- high_identity_rpb2
@@ -202,7 +202,7 @@ MATEK_identification <- function(
   MATEK_results$stage2_reference_ids <- stage2_reference_ids
   
   cat("\n--- Stage 2 Results (RPB2) ---\n")
-  print(stage2_results[, c("sseqid", "pident", "length")])
+  print(stage2_results[, c("sseqid", "average_pident_weighted", "length")])
   
   cat("\n[STAGE 3] Analyzing ITS (Internal Transcribed Spacer Region)...\n")
   
@@ -230,14 +230,14 @@ MATEK_identification <- function(
   )
   
   if (nrow(stage3_results) > 0) {
-    high_identity_its <- stage3_results[stage3_results$pident > its_primary_threshold, ]
+    high_identity_its <- stage3_results[stage3_results$average_pident_weighted > its_primary_threshold, ]
     
     if (nrow(high_identity_its) > 0) {
       cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% identity\n")
       
       if (nrow(high_identity_its) > 2) {
         cat("  → More than 2 results found. Applying stricter threshold (>", its_secondary_threshold, "%)...\n")
-        stage3_results <- high_identity_its[high_identity_its$pident > its_secondary_threshold, ]
+        stage3_results <- high_identity_its[high_identity_its$average_pident_weighted > its_secondary_threshold, ]
         
         if (nrow(stage3_results) == 0) {
           cat("  → No results at", its_secondary_threshold, "% threshold. Keeping", nrow(high_identity_its), "matches at", its_primary_threshold, "%.\n")
@@ -258,12 +258,12 @@ MATEK_identification <- function(
   MATEK_results$stage3_its <- stage3_results
 
   cat("\n--- Stage 3 Results (ITS) ---\n")
-  print(stage3_results[, c("sseqid", "pident", "length")])
+  print(stage3_results[, c("sseqid", "average_pident_weighted", "length")])
   
 cat("\n========== Final Identification ==========\n")
 
 if (nrow(stage3_results) > 0) {
-  high_confidence_results <- stage3_results[stage3_results$pident >= 99, ]
+  high_confidence_results <- stage3_results[stage3_results$average_pident_weighted >= 99, ]
   
   if (nrow(high_confidence_results) > 0) {
     cat("High confidence matches:\n\n")
