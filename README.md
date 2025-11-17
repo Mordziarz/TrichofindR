@@ -84,7 +84,7 @@ The trichoderma_blast() function allows you to perform a BLAST search against a 
 
 5. ACT (ACT_reference_sequences)
 
-6. TUB2 (TUB_reference_sequences)
+6. TUB2 (TUB2_reference_sequences)
 
 7. TEF3 (TEF3_reference_sequences)
 
