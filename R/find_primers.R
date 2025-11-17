@@ -1092,9 +1092,10 @@ IMLDTS_identification <- function(
         cat("✓ Found", nrow(high_identity_results), "matches with >", identity_threshold, "% identity\n\n")
       } else {
         IMLDTS_results$blast_results <- blast_results
-        cat("⚠ No matches above", identity_threshold, "% identity. Keeping all best matches.\n\n")
+        cat("⚠ No matches above", identity_threshold, "% identity. Keeping all BLAST results.\n\n")
       }
     }
+
     if (nrow(IMLDTS_results$blast_results) > 0) {
       filtered_blast <- IMLDTS_results$blast_results %>%
         dplyr::group_by(sseqid) %>%
@@ -1103,14 +1104,14 @@ IMLDTS_identification <- function(
         dplyr::arrange(dplyr::desc(length), dplyr::desc(pident))
       
       IMLDTS_results$blast_results <- as.data.frame(filtered_blast)
-      
-      IMLDTS_results$blast_results <- IMLDTS_results$blast_results[1:min(max_target_seqs, nrow(IMLDTS_results$blast_results)), ]
     }
+
+    display_results <- IMLDTS_results$blast_results[1:min(max_target_seqs, nrow(IMLDTS_results$blast_results)), ]
     
     cat("Top Species Matches (filtered - longest match per species):\n")
     cat(paste(rep("-", 80), collapse = ""), "\n")
-    for (i in seq_len(nrow(IMLDTS_results$blast_results))) {
-      result <- IMLDTS_results$blast_results[i, ]
+    for (i in seq_len(nrow(display_results))) {
+      result <- display_results[i, ]
       cat(sprintf("%2d. %-35s | Identity: %6.2f%% | Length: %5d bp\n",
                   i, result$sseqid, result$pident, result$length))
     }
@@ -1156,6 +1157,5 @@ IMLDTS_identification <- function(
   
   return(IMLDTS_results)
 }
-
 
 
