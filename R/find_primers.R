@@ -738,27 +738,44 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
     return(FALSE)
   }
 
-#' IMLDTS Identification with Ultra-FASTA Header from Genome Name
+#' IMLDTS Identification with BLAST Matching Against Reference Sequences
 #'
-#' Identifies IMLDTS loci (TEF1, RPB2, TEF3, LNS2, ACT, PGK) from a genome file.
-#' Extracts species name from genome filename and creates concatenated ultra-FASTA
-#' with organism name in the header.
+#' Identifies IMLDTS loci (TEF1, RPB2, TEF3, LNS2, ACT, PGK) from a genome file
+#' and performs BLAST-based species identification using concatenated sequences
+#' matched against reference database.
 #'
 #' @param genome_file Character string specifying path to genome FASTA file.
-#'   Filename should follow pattern: "Species_name_genome.fasta" or similar,
-#'   where the species name (e.g., "Trichoderma_longibrachiatum") is extracted
-#'   and used in the ultra-FASTA header.
+#'   The FASTA header should contain organism information.
 #'
-#' @return Path to generated ultra-FASTA file (invisibly).
+#' @param IMLDTS_reference_sequences Named list of reference IMLDTS concatenated
+#'   sequences for species identification. Names should be species names 
+#'   (e.g., "Trichoderma_parareesei").
+#'
+#' @param identity_threshold Numeric specifying the minimum percent identity (0-100)
+#'   for BLAST matches. Defaults to 95.
+#'
+#' @param max_target_seqs Integer specifying maximum number of top BLAST hits to keep.
+#'   Defaults to 10.
+#'
+#'   }
 #'
 #' @export
 
-IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
+IMLDTS_identification <- function(
+    genome_file = "/path/to/your/genome.fasta",
+    IMLDTS_reference_sequences = IMLDTS_reference,
+    identity_threshold = 95,
+    max_target_seqs = 10) {
+  
+  if (!file.exists(genome_file)) {
+    stop(paste("Genome file not found:", genome_file))
+  }
   
   genome_basename <- tools::file_path_sans_ext(basename(genome_file))
   
   message("Reading genome FASTA header to extract organism name...")
   
+  organism_name <- "Unknown"
   tryCatch({
     genome_seqs <- Biostrings::readDNAStringSet(genome_file, nrec = 1)
     first_header <- names(genome_seqs)[1]
@@ -771,7 +788,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
       message("✓ Organism name extracted from FASTA header: ", organism_name)
     } else {
       warning("Could not extract organism name from FASTA header: ", first_header)
-      warning("Using genome filename as fallback")
       organism_name <- genome_basename
     }
   }, error = function(e) {
@@ -1020,6 +1036,10 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
   
   cat(paste(rep("=", 80), collapse = ""), "\n\n")
   
+  blast_results <- NULL
+  final_identification <- NA
+  ultra_fasta_path <- NULL
+  
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
     
@@ -1036,8 +1056,6 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     )
     
     locus_details <- paste(locus_info, collapse=" + ")
-    
-    # Use organism_name extracted from genome FASTA header
     species_info <- paste0(" | ", organism_name)
     
     header <- paste0(
@@ -1052,22 +1070,93 @@ IMLDTS_identification <- function(genome_file = "/path/to/your/genome.fasta") {
     final_sequences <- Biostrings::DNAStringSet(Biostrings::DNAString(concatenated_sequence))
     names(final_sequences) <- header
     
-    output_fasta <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
-    Biostrings::writeXStringSet(final_sequences, output_fasta)
+    ultra_fasta_path <- file.path(output_dir, paste0(genome_basename, "_ultra.fasta"))
+    Biostrings::writeXStringSet(final_sequences, ultra_fasta_path)
     
-    message("✓ Combined and oriented FASTA written to: ", output_fasta)
+    message("✓ Combined and oriented FASTA written to: ", ultra_fasta_path)
     message("  Organism name in header: ", organism_name)
     message("  Total concatenated sequence: ", total_bp, " bp")
-    message("  Header: ", substr(header, 1, 120), "...")
+    
+    cat("\n" %+% paste(rep("=", 80), collapse = "") %+% "\n")
+    cat("BLAST-BASED SPECIES IDENTIFICATION\n")
+    cat(paste(rep("=", 80), collapse = "") %+% "\n\n")
+    
+    message("Performing BLAST search against reference IMLDTS sequences...")
+    
+    blast_results <- trichoderma_blast(
+      query_sequence = ultra_fasta_path,
+      reference_sequences = IMLDTS_reference_sequences
+    )
+    
+    if (!is.null(blast_results) && nrow(blast_results) > 0) {
+      high_identity_results <- blast_results[blast_results$pident >= identity_threshold, ]
+      
+      if (nrow(high_identity_results) > 0) {
+        cat("✓ Found", nrow(high_identity_results), "matches with ≥", identity_threshold, "% identity\n\n")
+        blast_results <- high_identity_results[1:min(max_target_seqs, nrow(high_identity_results)), ]
+      } else {
+        cat("⚠ No matches above", identity_threshold, "% identity. Keeping top", max_target_seqs, "best matches.\n\n")
+        blast_results <- blast_results[1:min(max_target_seqs, nrow(blast_results)), ]
+      }
+      
+      cat("Top Species Matches:\n")
+      cat(paste(rep("-", 80), collapse = ""), "\n")
+      for (i in seq_len(nrow(blast_results))) {
+        result <- blast_results[i, ]
+        cat(sprintf("%2d. %-35s | Identity: %6.2f%% | Length: %5d bp | E-value: %e\n",
+                    i, result$sseqid, result$pident, result$length, result$evalue))
+      }
+      cat(paste(rep("-", 80), collapse = ""), "\n\n")
+      
+      best_match <- blast_results[1, ]
+      if (best_match$pident >= 99) {
+        final_identification <- paste0(best_match$sseqid, " (High confidence: ", 
+                                      round(best_match$pident, 2), "%)")
+        cat("FINAL IDENTIFICATION (High Confidence):\n")
+      } else if (best_match$pident >= identity_threshold) {
+        final_identification <- paste0(best_match$sseqid, " (Probable: ", 
+                                      round(best_match$pident, 2), "%)")
+        cat("FINAL IDENTIFICATION (Probable):\n")
+      } else {
+        final_identification <- paste0(best_match$sseqid, " (Low confidence: ", 
+                                      round(best_match$pident, 2), "%)")
+        cat("FINAL IDENTIFICATION (Low Confidence):\n")
+      }
+      cat(final_identification, "\n\n")
+      
+    } else {
+      warning("BLAST search did not return results")
+      final_identification <- "No reliable match found"
+      cat("⚠ No reliable BLAST matches found\n\n")
+    }
+    
+    cat(paste(rep("=", 80), collapse = ""), "\n\n")
+    
   } else {
     warning("No sequences were combined!")
-    invisible(NULL)
-    return(NULL)
+    return(invisible(NULL))
   }
   
-  message("\n✓ IMLDTS identification complete!")
+  message("✓ IMLDTS identification complete!")
   message("  Individual locus folders: ", paste(locus_folders, collapse = ", "))
-  invisible(file.path(output_dir, paste0(genome_basename, "_ultra.fasta")))
+  
+  results <- list(
+    ultra_fasta_path = ultra_fasta_path,
+    organism_name = organism_name,
+    genome_basename = genome_basename,
+    blast_results = blast_results,
+    final_identification = final_identification,
+    total_sequences_analyzed = total_seqs,
+    orientation_stats = orientation_stats,
+    locus_details = list(
+      locus_info = locus_info,
+      oriented_count = oriented_count,
+      concatenated_length = nchar(concatenated_sequence)
+    )
+  )
+  
+  invisible(results)
 }
+
 
 
