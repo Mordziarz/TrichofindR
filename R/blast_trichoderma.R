@@ -84,7 +84,7 @@
 #' @keywords sequence-matching fungal-identification BLAST nucleotide-search
 
 trichoderma_blast <- function(query_sequence = "",
-                               reference_sequences) {
+                               reference_sequences = ITS_reference_sequences) {
 
   if (!is.character(query_sequence) || nchar(query_sequence) == 0) {
     stop("query_sequence must be a non-empty string pointing to a FASTA file")
