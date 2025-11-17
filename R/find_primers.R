@@ -763,7 +763,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 
 IMLDTS_identification <- function(
     genome_file = "/path/to/your/genome.fasta",
-    IMLDTS_reference_sequences = IMLDTS_reference_sequences,
+    IMLDTS_reference_sequences,
     identity_threshold = 95,
     max_target_seqs = 10) {
   
@@ -1036,9 +1036,10 @@ IMLDTS_identification <- function(
   
   cat(paste(rep("=", 80), collapse = ""), "\n\n")
   
-  blast_results <- NULL
-  final_identification <- NA
-  ultra_fasta_path <- NULL
+  IMLDTS_results <- list(
+    blast_results = NULL,
+    final_identification = NA
+  )
   
   if (nchar(concatenated_sequence) > 0) {
     total_bp <- nchar(concatenated_sequence)
@@ -1077,9 +1078,9 @@ IMLDTS_identification <- function(
     message("  Organism name in header: ", organism_name)
     message("  Total concatenated sequence: ", total_bp, " bp")
     
-    cat("\n" %+% paste(rep("=", 80), collapse = "") %+% "\n")
+    cat("\n", paste(rep("=", 80), collapse = ""), "\n", sep = "")
     cat("BLAST-BASED SPECIES IDENTIFICATION\n")
-    cat(paste(rep("=", 80), collapse = "") %+% "\n\n")
+    cat(paste(rep("=", 80), collapse = ""), "\n\n")
     
     message("Performing BLAST search against reference IMLDTS sequences...")
     
@@ -1088,49 +1089,59 @@ IMLDTS_identification <- function(
       reference_sequences = IMLDTS_reference_sequences
     )
     
-    if (!is.null(blast_results) && nrow(blast_results) > 0) {
-      high_identity_results <- blast_results[blast_results$pident >= identity_threshold, ]
+    if (nrow(blast_results) > 0) {
+      high_identity_results <- blast_results[blast_results$pident > identity_threshold, ]
       
       if (nrow(high_identity_results) > 0) {
-        cat("✓ Found", nrow(high_identity_results), "matches with ≥", identity_threshold, "% identity\n\n")
-        blast_results <- high_identity_results[1:min(max_target_seqs, nrow(high_identity_results)), ]
+        IMLDTS_results$blast_results <- high_identity_results
+        cat("✓ Found", nrow(high_identity_results), "matches with >", identity_threshold, "% identity\n\n")
       } else {
-        cat("⚠ No matches above", identity_threshold, "% identity. Keeping top", max_target_seqs, "best matches.\n\n")
-        blast_results <- blast_results[1:min(max_target_seqs, nrow(blast_results)), ]
+        IMLDTS_results$blast_results <- blast_results[1:min(5, nrow(blast_results)), ]
+        cat("⚠ No matches above", identity_threshold, "% identity. Keeping top 5 best matches.\n\n")
       }
-      
-      cat("Top Species Matches:\n")
-      cat(paste(rep("-", 80), collapse = ""), "\n")
-      for (i in seq_len(nrow(blast_results))) {
-        result <- blast_results[i, ]
-        cat(sprintf("%2d. %-35s | Identity: %6.2f%% | Length: %5d bp | E-value: %e\n",
-                    i, result$sseqid, result$pident, result$length, result$evalue))
-      }
-      cat(paste(rep("-", 80), collapse = ""), "\n\n")
-      
-      best_match <- blast_results[1, ]
-      if (best_match$pident >= 99) {
-        final_identification <- paste0(best_match$sseqid, " (High confidence: ", 
-                                      round(best_match$pident, 2), "%)")
-        cat("FINAL IDENTIFICATION (High Confidence):\n")
-      } else if (best_match$pident >= identity_threshold) {
-        final_identification <- paste0(best_match$sseqid, " (Probable: ", 
-                                      round(best_match$pident, 2), "%)")
-        cat("FINAL IDENTIFICATION (Probable):\n")
-      } else {
-        final_identification <- paste0(best_match$sseqid, " (Low confidence: ", 
-                                      round(best_match$pident, 2), "%)")
-        cat("FINAL IDENTIFICATION (Low Confidence):\n")
-      }
-      cat(final_identification, "\n\n")
-      
-    } else {
-      warning("BLAST search did not return results")
-      final_identification <- "No reliable match found"
-      cat("⚠ No reliable BLAST matches found\n\n")
     }
     
-    cat(paste(rep("=", 80), collapse = ""), "\n\n")
+    IMLDTS_results$blast_results <- IMLDTS_results$blast_results[1:min(max_target_seqs, nrow(IMLDTS_results$blast_results)), ]
+    
+    cat("Top Species Matches:\n")
+    cat(paste(rep("-", 80), collapse = ""), "\n")
+    for (i in seq_len(nrow(IMLDTS_results$blast_results))) {
+      result <- IMLDTS_results$blast_results[i, ]
+      cat(sprintf("%2d. %-35s | Identity: %6.2f%% | Length: %5d bp\n",
+                  i, result$sseqid, result$pident, result$length))
+    }
+    cat(paste(rep("-", 80), collapse = ""), "\n\n")
+    
+    if (nrow(IMLDTS_results$blast_results) > 0) {
+      high_confidence_results <- IMLDTS_results$blast_results[IMLDTS_results$blast_results$pident >= 99, ]
+      
+      if (nrow(high_confidence_results) > 0) {
+        cat("High confidence matches:\n\n")
+        
+        for (i in seq_len(nrow(high_confidence_results))) {
+          match <- high_confidence_results[i, ]
+          cat("  ", i, ". ", match$sseqid, "\n")
+        }
+        
+        IMLDTS_results$final_identification <- high_confidence_results$sseqid
+        
+      } else {
+        cat("Probable matches:\n\n")
+        
+        for (i in seq_len(nrow(IMLDTS_results$blast_results))) {
+          match <- IMLDTS_results$blast_results[i, ]
+          cat("  ", i, ". ", match$sseqid, "\n")
+        }
+        
+        IMLDTS_results$final_identification <- IMLDTS_results$blast_results$sseqid
+      }
+      
+    } else {
+      IMLDTS_results$final_identification <- "No reliable Trichoderma identification found"
+      cat(IMLDTS_results$final_identification, "\n")
+    }
+    
+    cat("\n", paste(rep("=", 80), collapse = ""), "\n\n", sep = "")
     
   } else {
     warning("No sequences were combined!")
@@ -1138,24 +1149,8 @@ IMLDTS_identification <- function(
   }
   
   message("✓ IMLDTS identification complete!")
-  message("  Individual locus folders: ", paste(locus_folders, collapse = ", "))
   
-  results <- list(
-    ultra_fasta_path = ultra_fasta_path,
-    organism_name = organism_name,
-    genome_basename = genome_basename,
-    blast_results = blast_results,
-    final_identification = final_identification,
-    total_sequences_analyzed = total_seqs,
-    orientation_stats = orientation_stats,
-    locus_details = list(
-      locus_info = locus_info,
-      oriented_count = oriented_count,
-      concatenated_length = nchar(concatenated_sequence)
-    )
-  )
-  
-  invisible(results)
+  return(IMLDTS_results)
 }
 
 
