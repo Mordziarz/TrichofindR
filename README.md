@@ -34,7 +34,7 @@ You will find the results of the analysis in the specified output directory. The
 
 ```r
 results <- analyze_trichoderma_genome(
-  genome_file = "path/to/your/genome",
+  genome_path = "path/to/your/genome",
   forward_primers      = c("CATCGAGAAGTTCGAGAAGG","AACTTGCAGGCAATGTGG"),
   reverse_primers      = c("AACTTGCAGGCAATGTGG","CATCGAGAAGTTCGAGAAGG"),  
   max_mismatch         = 1,
@@ -52,7 +52,7 @@ For example, to identify the RPB2 gene, you would use this code:
 
 ```r
 results <- analyze_trichoderma_genome(
-  genome_file = "path/to/your/genome",
+  genome_path = "path/to/your/genome",
   forward_primers      = RPB2,
   reverse_primers      = RPB2,  
   max_mismatch         = 1,
@@ -67,7 +67,7 @@ results <- analyze_trichoderma_genome(
 I created a function to identify 8 amplicons at once by providing only the path to the Trichoderma genome. The function automatically creates 8 folders in your working directory, each with a different amplicon.
 
 ```r
-all_amplicon_identification(genome_file = "path/to/your/genome")
+all_amplicon_identification(genome_path = "path/to/your/genome")
 ```
 
 # BLAST against TrichofindR database
