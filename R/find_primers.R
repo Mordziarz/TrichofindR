@@ -5,7 +5,7 @@
 #' and generates amplicon sequences with quality metrics. Optimized for speed.
 #' Duplicate amplicons with identical coordinates and sequences are counted only once.
 #'
-#' @param genome_file Character string specifying path to genome FASTA file.
+#' @param genome_path Character string specifying path to genome FASTA file.
 #' @param forward_primers Character vector of forward primer sequences.
 #' @param reverse_primers Character vector of reverse primer sequences.
 #' @param max_mismatch Integer specifying maximum mismatches for primer binding.
@@ -30,7 +30,7 @@
 #' forward_primers <- c("CGGTTACCAAAACCGGCGTAGAAAGGACCGCCGT")
 #' reverse_primers <- c("ACACCGTCCCCTTCTATGCCGGTTTTGGCAACCG")
 #' results <- analyze_trichoderma_genome(
-#'   genome_file = "genome.fasta",
+#'   genome_path = "genome.fasta",
 #'   forward_primers = forward_primers,
 #'   reverse_primers = reverse_primers,
 #'   all = TRUE
@@ -38,7 +38,7 @@
 #' }
 #'
 #' @export
-analyze_trichoderma_genome <- function(genome_file,
+analyze_trichoderma_genome <- function(genome_path,
                                        forward_primers,
                                        reverse_primers,
                                        max_mismatch = 1,
@@ -49,10 +49,10 @@ analyze_trichoderma_genome <- function(genome_file,
                                        min_contig_length = 1000) {
 
   cat("=== GENOME ANALYSIS FOR SPECIFIED PRIMERS ===\n")
-  cat("Genome file:", genome_file, "\n")
+  cat("Genome file:", genome_path, "\n")
 
   cat("\nLoading all contigs...\n")
-  genome_seqs <- readDNAStringSet(genome_file)
+  genome_seqs <- readDNAStringSet(genome_path)
   
   genome_seqs <- DNAStringSet(lapply(genome_seqs, function(x) DNAString(toupper(as.character(x)))))
 
@@ -153,7 +153,7 @@ analyze_trichoderma_genome <- function(genome_file,
       cat("  ", contig_name, ":", length(all_results[[contig_name]]), "amplicons\n")
     }
 
-    save_contig_results(all_results, output_dir, genome_file, all = all)
+    save_contig_results(all_results, output_dir, genome_path, all = all)
   } else {
     cat("\nNo amplicons found in the entire genome.\n")
     cat("Please check:\n")
@@ -484,14 +484,14 @@ analyze_single_contig <- function(sequence, contig_name,
 #'
 #' @param all_results List of lists containing amplicons from genome analysis.
 #' @param output_dir Character string specifying directory for output files.
-#' @param genome_file Character string with path to original genome file.
+#' @param genome_path Character string with path to original genome file.
 #' @param all Logical. If TRUE retains all amplicons. If FALSE removes duplicates
 #'   with identical genomic coordinates. Defaults to FALSE.
 #'
 #' @return Invisible NULL.
 #'
 #' @keywords internal
-save_contig_results <- function(all_results, output_dir, genome_file, all = FALSE) {
+save_contig_results <- function(all_results, output_dir, genome_path, all = FALSE) {
 
   all_amplicons <- unlist(all_results, recursive = FALSE)
 
@@ -583,7 +583,7 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
 #' (TEF1, RPB2, TEF3, TUB2, LNS2, ACT, PGK, ITS) from a genome sequence file.
 #' Results for each locus are saved to separate output directories.
 #'
-#' @param genome_file Character string specifying the path to the genome FASTA file.
+#' @param genome_path Character string specifying the path to the genome FASTA file.
 #'
 #'
 #' Analysis parameters are fixed across all loci:
@@ -605,7 +605,7 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
 #'
 #' # Run with custom genome file
 #' results <- all_amplicon_identification(
-#'   genome_file = "/path/to/custom/genome.fasta"
+#'   genome_path = "/path/to/custom/genome.fasta"
 #' )
 #'
 #' # Access results for specific locus
@@ -620,7 +620,7 @@ save_contig_results <- function(all_results, output_dir, genome_file, all = FALS
 #'
 #' @export
 #'
-all_amplicon_identification <- function(genome_file = "file.fasta") {
+all_amplicon_identification <- function(genome_path = "file.fasta") {
   
   loci <- list(
     TEF1 = TEF1,
@@ -634,7 +634,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
   )
   
   common_params <- list(
-    genome_file = genome_file,
+    genome_path = genome_path,
     max_mismatch = 1,
     max_amplicon_length = 5000,
     min_amplicon_length = 100,
@@ -653,7 +653,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
       max_mismatch = common_params$max_mismatch,
       max_amplicon_length = common_params$max_amplicon_length,
       min_amplicon_length = common_params$min_amplicon_length,
-      genome_file = common_params$genome_file,
+      genome_path = common_params$genome_path,
       all = common_params$all
     )
     
@@ -744,7 +744,7 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' and performs BLAST-based species identification using concatenated sequences
 #' matched against reference database.
 #'
-#' @param genome_file Character string specifying path to genome FASTA file.
+#' @param genome_path Character string specifying path to genome FASTA file.
 #'   The FASTA header should contain organism information.
 #'
 #' @param identity_threshold Numeric specifying the minimum percent identity (0-100)
@@ -758,22 +758,22 @@ all_amplicon_identification <- function(genome_file = "file.fasta") {
 #' @export
 
 IMLDTS_identification <- function(
-    genome_file = "/path/to/your/genome.fasta",
+    genome_path = "/path/to/your/genome.fasta",
     identity_threshold = 95,
     max_target_seqs = 10) {
   
-  if (!file.exists(genome_file)) {
-    stop(paste("Genome file not found:", genome_file))
+  if (!file.exists(genome_path)) {
+    stop(paste("Genome file not found:", genome_path))
   }
   
   
-  genome_basename <- tools::file_path_sans_ext(basename(genome_file))
+  genome_basename <- tools::file_path_sans_ext(basename(genome_path))
   
   message("Reading genome FASTA header to extract organism name...")
   
   organism_name <- "Unknown"
   tryCatch({
-    genome_seqs <- Biostrings::readDNAStringSet(genome_file, nrec = 1)
+    genome_seqs <- Biostrings::readDNAStringSet(genome_path, nrec = 1)
     first_header <- names(genome_seqs)[1]
     
     organism_match <- regmatches(first_header, 
@@ -810,7 +810,7 @@ IMLDTS_identification <- function(
   )
   
   common_params <- list(
-    genome_file = genome_file,
+    genome_path = genome_path,
     max_mismatch = 1,
     max_amplicon_length = 5000,
     min_amplicon_length = 100,
@@ -833,7 +833,7 @@ IMLDTS_identification <- function(
       max_mismatch = common_params$max_mismatch,
       max_amplicon_length = common_params$max_amplicon_length,
       min_amplicon_length = common_params$min_amplicon_length,
-      genome_file = common_params$genome_file,
+      genome_path = common_params$genome_path,
       all = common_params$all
     )
     

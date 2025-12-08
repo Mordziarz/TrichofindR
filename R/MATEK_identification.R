@@ -123,7 +123,7 @@ MATEK_identification <- function(
   cat("\n[STAGE 1] Analyzing TEF1 (Translation Elongation Factor 1-alpha)...\n")
   
   analyze_trichoderma_genome(
-    genome_file = genome_path,
+    genome_path = genome_path,
     forward_primers = TEF1,
     reverse_primers = TEF1,
     max_mismatch = max_mismatch,
@@ -166,7 +166,7 @@ MATEK_identification <- function(
   cat("\n[STAGE 2] Analyzing RPB2 (RNA Polymerase II Largest Subunit)...\n")
   
   analyze_trichoderma_genome(
-    genome_file = genome_path,
+    genome_path = genome_path,
     forward_primers = RPB2,
     reverse_primers = RPB2,
     max_mismatch = max_mismatch,
@@ -215,7 +215,7 @@ MATEK_identification <- function(
   cat("\n[STAGE 3] Analyzing ITS (Internal Transcribed Spacer Region)...\n")
   
   analyze_trichoderma_genome(
-    genome_file = genome_path,
+    genome_path = genome_path,
     forward_primers = ITS,
     reverse_primers = ITS,
     max_mismatch = max_mismatch,
