@@ -797,7 +797,8 @@ IMLDTS_identification <- function(
     TEF3 = TEF3,
     LNS2 = LNS2,
     ACT = ACT,
-    PGK = PGK
+    PGK = PGK,
+    ACL1 = ACL1
   )
   
   loci_primers <- list(
@@ -806,7 +807,8 @@ IMLDTS_identification <- function(
     TEF3 = list(forward = TEF3_F, reverse = TEF3_R),
     LNS2 = list(forward = LNS2_F, reverse = LNS2_R),
     ACT = list(forward = ACT_F, reverse = ACT_R),
-    PGK = list(forward = PGK_F, reverse = PGK_R)
+    PGK = list(forward = PGK_F, reverse = PGK_R),
+    ACL1 = list(forward = ACL1_F, reverse = ACL1_R)
   )
   
   common_params <- list(
