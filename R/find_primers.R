@@ -630,7 +630,8 @@ all_amplicon_identification <- function(genome_path = "file.fasta") {
     LNS2 = LNS2,
     ACT = ACT,
     PGK = PGK,
-    ITS = ITS
+    ITS = ITS,
+    ACL1 = ACL1
   )
   
   common_params <- list(
