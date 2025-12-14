@@ -17,6 +17,7 @@ library(BSgenome)
 library(GenomicRanges)
 library(IRanges)
 library(rBLAST)
+library(dplyr)
 ```
 Be sure to install the rBLAST package (https://github.com/mhahsler/rBLAST)﻿
 
