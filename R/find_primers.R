@@ -580,7 +580,7 @@ save_contig_results <- function(all_results, output_dir, genome_path, all = FALS
 #'
 #' @description
 #' Performs primer-based amplicon identification for multiple Trichoderma loci
-#' (TEF1, RPB2, TEF3, TUB2, LNS2, ACT, PGK, ITS) from a genome sequence file.
+#' (TEF1, RPB2, TEF3, TUB2, LNS2, ACT, PGK, ITS, ACL1) from a genome sequence file.
 #' Results for each locus are saved to separate output directories.
 #'
 #' @param genome_path Character string specifying the path to the genome FASTA file.
@@ -914,29 +914,46 @@ IMLDTS_identification <- function(
     seq_dna <- Biostrings::DNAString(seq_char)
     seq_rc <- as.character(Biostrings::reverseComplement(seq_dna))
     seq_rc_dna <- Biostrings::DNAString(seq_rc)
-    
+
     fwd_at_start <- find_primer_smart(seq_dna, fwd_primers, position = "start", tolerance = 1)
     rev_at_end <- find_primer_smart(seq_dna, rev_primers, position = "end", tolerance = 1)
     rev_at_start <- find_primer_smart(seq_dna, rev_primers, position = "start", tolerance = 1)
     fwd_at_end <- find_primer_smart(seq_dna, fwd_primers, position = "end", tolerance = 1)
-    
+
+    fwd_at_start_rc <- find_primer_smart(seq_rc_dna, fwd_primers, position = "start", tolerance = 1)
+    rev_at_end_rc <- find_primer_smart(seq_rc_dna, rev_primers, position = "end", tolerance = 1)
+    rev_at_start_rc <- find_primer_smart(seq_rc_dna, rev_primers, position = "start", tolerance = 1)
+    fwd_at_end_rc <- find_primer_smart(seq_rc_dna, fwd_primers, position = "end", tolerance = 1)
+
     if (fwd_at_start && rev_at_end) {
       final_seq <- seq_char
       orientation <- "forward"
+    } else if (fwd_at_start_rc && rev_at_end_rc) {
+      final_seq <- seq_rc
+      orientation <- "reverse_complemented"
     } else if (rev_at_start && fwd_at_end) {
       final_seq <- seq_rc
       orientation <- "reverse_complemented"
+    } else if (rev_at_start_rc && fwd_at_end_rc) {
+      final_seq <- seq_char
+      orientation <- "forward"
     } else if (fwd_at_start && !rev_at_end && !rev_at_start) {
       final_seq <- seq_char
       orientation <- "forward_fragment"
     } else if (rev_at_start && !fwd_at_end && !fwd_at_start) {
       final_seq <- seq_rc
       orientation <- "reverse_complemented_fragment"
+    } else if (fwd_at_start_rc && !rev_at_end_rc && !rev_at_start_rc) {
+      final_seq <- seq_rc
+      orientation <- "reverse_complemented_fragment"
+    } else if (rev_at_start_rc && !fwd_at_end_rc && !fwd_at_start_rc) {
+      final_seq <- seq_char
+      orientation <- "forward_fragment"
     } else {
       final_seq <- seq_char
       orientation <- "unknown"
-    }
-    
+    }  
+        
     if (is.null(orientation_stats[[orientation]])) {
       orientation_stats[[orientation]] <- list()
     }
