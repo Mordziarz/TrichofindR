@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Performs a sequential multi-gene BLAST identification pipeline for Trichoderma species.
-#' The function uses a hierarchical approach analyzing TEF1, RPB2, and ITS genomic regions
+#' The function uses a hierarchical approach analyzing TEF1, RPB2, and ACL1 genomic regions
 #' to progressively narrow down species identification. Results from each marker are used
 #' to filter the reference database for the subsequent marker, improving specificity and
 #' reducing computational burden.
@@ -18,7 +18,7 @@
 #'     Uses TEF1-filtered reference database to narrow down candidates. Applies same
 #'     filtering criteria as Stage 1.
 #'
-#'   \item \strong{Stage 3 - ITS}: Analyzes the Internal Transcribed Spacer region.
+#'   \item \strong{Stage 3 - ACL1}: Analyzes the Internal Transcribed Spacer region.
 #'     Uses RPB2-filtered reference database. Applies adaptive filtering: initially filters
 #'     for >95% identity. If more than 2 results are found, applies stricter 99% threshold.
 #'     If 2 or fewer results, keeps the 95% matches for broader identification.
@@ -32,8 +32,7 @@
 #'   and amplicon extraction. Should be in FASTA format with sequences representing the target
 #'   organism's genomic DNA.
 #'
-#' @param genome_path Character string specifying the path to the genome file. Defaults to
-#'   \code{"~/Pobrane/24THUB.fasta"}. Can be modified to analyze different genome files.
+#' @param genome_path Character string specifying the path to the genome file. Can be modified to analyze different genome files.
 #'
 #' @param max_mismatch Integer specifying the maximum number of mismatches allowed in primer
 #'   binding sites. Defaults to \code{1}. Controls primer specificity.
@@ -51,10 +50,10 @@
 #' @param rpb2_threshold Numeric specifying the percent identity threshold for RPB2 results.
 #'   Defaults to \code{95}. Same filtering logic as TEF1.
 #'
-#' @param its_primary_threshold Numeric specifying the initial percent identity threshold for ITS results.
+#' @param acl1_primary_threshold Numeric specifying the initial percent identity threshold for ACL1 results.
 #'   Defaults to \code{95}. Used for primary filtering in Stage 3.
 #'
-#' @param its_secondary_threshold Numeric specifying the stricter percent identity threshold applied
+#' @param acl1_secondary_threshold Numeric specifying the stricter percent identity threshold applied
 #'   when more than 2 results are found at primary threshold. Defaults to \code{99}. Provides
 #'   high-confidence identifications when multiple candidates remain.
 #'
@@ -63,7 +62,7 @@
 #' \describe{
 #'   \item{stage1_tef1}{Data frame of BLAST results from TEF1 analysis}
 #'   \item{stage2_rpb2}{Data frame of BLAST results from RPB2 analysis}
-#'   \item{stage3_its}{Data frame of BLAST results from ITS analysis}
+#'   \item{stage3_acl1}{Data frame of BLAST results from ACL1 analysis}
 #'   \item{final_identification}{Character vector with the most likely species identification}
 #'   \item{stage1_reference_ids}{Character vector of reference sequence IDs passing TEF1 filter}
 #'   \item{stage2_reference_ids}{Character vector of reference sequence IDs passing RPB2 filter}
@@ -79,7 +78,7 @@
 #' # View results from each stage
 #' head(MATEK_results$stage1_tef1, 10)
 #' head(MATEK_results$stage2_rpb2, 10)
-#' head(MATEK_results$stage3_its, 10)
+#' head(MATEK_results$stage3_acl1, 10)
 #'
 #' # Get final species identification
 #' MATEK_results$final_identification
@@ -93,7 +92,7 @@
 #' @export
 #'
 #' @author Mateusz Mazdziarz
-#' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 ITS phylogenetics
+#' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 acl1 phylogenetics
 
 
 MATEK_identification <- function(
@@ -103,8 +102,8 @@ MATEK_identification <- function(
     max_amplicon_length = 5000,
     tef1_threshold = 95,
     rpb2_threshold = 95,
-    its_primary_threshold = 95,
-    its_secondary_threshold = 99) {
+    acl1_primary_threshold = 95,
+    acl1_secondary_threshold = 99) {
   
   if (!file.exists(genome_path)) {
     stop(paste("Genome file not found:", genome_path))
@@ -113,7 +112,7 @@ MATEK_identification <- function(
   MATEK_results <- list(
     stage1_tef1 = NULL,
     stage2_rpb2 = NULL,
-    stage3_its = NULL,
+    stage3_acl1 = NULL,
     stage1_reference_ids = NULL,
     stage2_reference_ids = NULL,
     final_identification = NA
@@ -160,7 +159,7 @@ MATEK_identification <- function(
   if (nrow(stage1_results) > 0) {
     print(stage1_results[, c("sseqid", "average_pident_weighted", "total_length")])
   } else {
-    cat("Brak wyników BLAST w Stage 1.\n")
+    cat("BLAST returned no results in stage 1.\n")
   }
   
   cat("\n[STAGE 2] Analyzing RPB2 (RNA Polymerase II Largest Subunit)...\n")
@@ -209,68 +208,68 @@ MATEK_identification <- function(
   if (nrow(stage2_results) > 0) {
     print(stage2_results[, c("sseqid", "average_pident_weighted", "total_length")])
   } else {
-    cat("Brak wyników BLAST w Stage 2.\n")
+    cat("BLAST returned no results in stage 2.\n")
   }
   
-  cat("\n[STAGE 3] Analyzing ITS (Internal Transcribed Spacer Region)...\n")
+  cat("\n[STAGE 3] Analyzing ACL1 (Internal Transcribed Spacer Region)...\n")
   
   analyze_trichoderma_genome(
     genome_path = genome_path,
-    forward_primers = ITS,
-    reverse_primers = ITS,
+    forward_primers = ACL1,
+    reverse_primers = ACL1,
     max_mismatch = max_mismatch,
     max_amplicon_length = max_amplicon_length,
     min_amplicon_length = min_amplicon_length,
-    output_dir = "ITS_results/",
+    output_dir = "ACL1_results/",
     all = FALSE
   )
   
-  ITS_filtered <- ITS_reference_sequences[names(ITS_reference_sequences) %in% stage2_reference_ids]
+  ACL1_filtered <- ACL1_reference_sequences[names(ACL1_reference_sequences) %in% stage2_reference_ids]
   
-  if (length(ITS_filtered) == 0) {
-    cat("⚠ Warning: No ITS sequences match RPB2 stage results. Using complete ITS database.\n")
-    ITS_filtered <- ITS_reference_sequences
+  if (length(ACL1_filtered) == 0) {
+    cat("⚠ Warning: No ACL1 sequences match RPB2 stage results. Using complete ACL1 database.\n")
+    ACL1_filtered <- ACL1_reference_sequences
   }
   
   stage3_results <- trichoderma_blast(
-    query_sequence = "ITS_results/amplicons_with_primers.fasta",
-    reference_sequences = ITS_filtered
+    query_sequence = "ACL1_results/amplicons_with_primers.fasta",
+    reference_sequences = ACL1_filtered
   )
   
   if (nrow(stage3_results) > 0) {
-    high_identity_its <- stage3_results[stage3_results$average_pident_weighted > its_primary_threshold, ]
+    high_identity_acl1 <- stage3_results[stage3_results$average_pident_weighted > acl1_primary_threshold, ]
     
-    if (nrow(high_identity_its) > 0) {
-      cat("✓ Found", nrow(high_identity_its), "matches with >", its_primary_threshold, "% weighted identity\n")
+    if (nrow(high_identity_acl1) > 0) {
+      cat("✓ Found", nrow(high_identity_acl1), "matches with >", acl1_primary_threshold, "% weighted identity\n")
       
-      if (nrow(high_identity_its) > 2) {
-        cat("  → More than 2 results found. Applying stricter threshold (>", its_secondary_threshold, "%)...\n")
+      if (nrow(high_identity_acl1) > 2) {
+        cat("  → More than 2 results found. Applying stricter threshold (>", acl1_secondary_threshold, "%)...\n")
         
-        stage3_results <- high_identity_its[high_identity_its$average_pident_weighted > its_secondary_threshold, ]
+        stage3_results <- high_identity_acl1[high_identity_acl1$average_pident_weighted > acl1_secondary_threshold, ]
         
         if (nrow(stage3_results) == 0) {
-          cat("  → No results at", its_secondary_threshold, "% threshold. Keeping", nrow(high_identity_its), "matches at", its_primary_threshold, "%.\n")
-          stage3_results <- high_identity_its
+          cat("  → No results at", acl1_secondary_threshold, "% threshold. Keeping", nrow(high_identity_acl1), "matches at", acl1_primary_threshold, "%.\n")
+          stage3_results <- high_identity_acl1
         } else {
-          cat("  → Retained", nrow(stage3_results), "matches at", its_secondary_threshold, "% weighted identity\n")
+          cat("  → Retained", nrow(stage3_results), "matches at", acl1_secondary_threshold, "% weighted identity\n")
         }
       } else {
-        cat("  → ", nrow(high_identity_its), "result(s) found. Keeping at", its_primary_threshold, "% weighted threshold.\n")
-        stage3_results <- high_identity_its
+        cat("  → ", nrow(high_identity_acl1), "result(s) found. Keeping at", acl1_primary_threshold, "% weighted threshold.\n")
+        stage3_results <- high_identity_acl1
       }
     } else {
-      cat("⚠ No matches above", its_primary_threshold, "% weighted identity. Keeping top 5 best matches.\n")
+      cat("⚠ No matches above", acl1_primary_threshold, "% weighted identity. Keeping top 5 best matches.\n")
       stage3_results <- stage3_results[1:min(5, nrow(stage3_results)), ]
     }
   }
   
-  MATEK_results$stage3_its <- stage3_results
+  MATEK_results$stage3_acl1 <- stage3_results
 
-  cat("\n--- Stage 3 Results (ITS) ---\n")
+  cat("\n--- Stage 3 Results (ACL1) ---\n")
   if (nrow(stage3_results) > 0) {
     print(stage3_results[, c("sseqid", "average_pident_weighted", "total_length")])
   } else {
-    cat("Brak wyników BLAST w Stage 3.\n")
+    cat("BLAST returned no results in stage 3.\n")
   }
   
   cat("\n========== Final Identification ==========\n")
