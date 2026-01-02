@@ -92,7 +92,7 @@
 #' @export
 #'
 #' @author Mateusz Mazdziarz
-#' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 acl1 phylogenetics
+#' @keywords fungal-identification multi-marker Trichoderma TEF1 RPB2 ACL1 phylogenetics
 
 
 MATEK_identification <- function(
