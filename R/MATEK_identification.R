@@ -1,4 +1,4 @@
-#' Multi-Marker Identification System for Trichoderma (MATEK)
+#' Multilocus Analytical Trichoderma Evaluation Key (MATEK)
 #'
 #' @description
 #' Performs a sequential 7-gene BLAST identification pipeline for Trichoderma species.

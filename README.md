@@ -102,19 +102,24 @@ results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
 ```
 
-# Automatic TEF1-RPB2-ACL1 identification (MATEK)
+# MATEK — Multilocus Analytical Trichoderma Evaluation Key
 
 MATEK - Multilocus Analytical Trichoderma Evaluation Key
 
-I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, and ACL1 identification from FASTA sequence.
+I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, TEF3, PGK, ACT, ACL1, and LNS2 identification from FASTA sequence.
 
 ```r
 MATEK_identification <- MATEK_identification(genome_path = "your_genome_sequence.fasta")
 
 MATEK_identification$stage1_tef1
 MATEK_identification$stage2_rpb2
-MATEK_identification$stage3_acl1
+MATEK_identification$stage3_tef3
+MATEK_identification$stage4_pgk
+MATEK_identification$stage5_act
+MATEK_identification$stage6_acl1
+MATEK_identification$stage7_lns2
 
+MATEK_identification$final_identification
 ```
 # Automatic Integrative Multilocus Delimitation of Trichoderma Species (IMLDTS)
 
