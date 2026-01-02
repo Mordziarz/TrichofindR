@@ -2,10 +2,10 @@
 #'
 #' @description
 #' Performs a sequential 7-gene BLAST identification pipeline for Trichoderma species.
-#' The function uses a hierarchical approach analyzing TEF1, RPB2, TEF3, LNS2, ACT, 
-#' ACL1, and PGK genomic regions to progressively narrow down species identification. 
+#' The function uses a hierarchical approach analyzing TEF1, RPB2, TEF3, PGK, ACT, 
+#' ACL1, and LNS2 genomic regions to progressively narrow down species identification. 
 #' Results from each marker are used to filter the reference database for the 
-#' subsequent marker, improving specificity.
+#' subsequent marker.
 #'
 #'
 #' @param genome_path Character string specifying the path to the genome FASTA file.
@@ -15,15 +15,16 @@
 #' @param tef1_threshold Numeric. Percent identity threshold for Stage 1. Defaults to 95.
 #' @param rpb2_threshold Numeric. Percent identity threshold for Stage 2. Defaults to 95.
 #' @param tef3_threshold Numeric. Percent identity threshold for Stage 3. Defaults to 95.
-#' @param lns2_threshold Numeric. Percent identity threshold for Stage 4. Defaults to 95.
+#' @param pgk_threshold Numeric. Percent identity threshold for Stage 4. Defaults to 95.
 #' @param act_threshold Numeric. Percent identity threshold for Stage 5. Defaults to 95.
 #' @param acl1_threshold Numeric. Percent identity threshold for Stage 6. Defaults to 95.
-#' @param pgk_primary_threshold Numeric. Initial threshold for PGK. Defaults to 95.
-#' @param pgk_secondary_threshold Numeric. Strict threshold (99%) if >2 matches remain.
+#' @param lns2_primary_threshold Numeric. Initial threshold for LNS2 (Stage 7). Defaults to 95.
+#' @param lns2_secondary_threshold Numeric. Strict threshold applied if >2 matches remain in Stage 7. Defaults to 99.
 #'
 #' @return A list containing results from all 7 identification stages and the final identification.
 #'
 #' @export
+
 MATEK_identification <- function(
     genome_path = "path_to_genome",
     max_mismatch = 1,
@@ -32,11 +33,11 @@ MATEK_identification <- function(
     tef1_threshold = 95,
     rpb2_threshold = 95,
     tef3_threshold = 95,
-    lns2_threshold = 95,
+    pgk_threshold = 95,
     act_threshold = 95,
     acl1_threshold = 95,
-    pgk_primary_threshold = 95,
-    pgk_secondary_threshold = 99) {
+    lns2_primary_threshold = 95,
+    lns2_secondary_threshold = 99) {
   
   if (!file.exists(genome_path)) {
     stop(paste("Genome file not found:", genome_path))
@@ -44,11 +45,10 @@ MATEK_identification <- function(
   
   MATEK_results <- list(
     stage1_tef1 = NULL, stage2_rpb2 = NULL, stage3_tef3 = NULL,
-    stage4_lns2 = NULL, stage5_act = NULL, stage6_acl1 = NULL, 
-    stage7_pgk = NULL, final_identification = NA
+    stage4_pgk = NULL, stage5_act = NULL, stage6_acl1 = NULL, 
+    stage7_lns2 = NULL, final_identification = NA
   )
   
-  # Helper function to run stage logic to avoid code duplication while keeping your logic
   run_matek_stage <- function(stage_name, primers, ref_db, filtered_ids, threshold, output_dir) {
     cat(paste0("\n[STAGE] Analyzing ", stage_name, "...\n"))
     
@@ -82,62 +82,56 @@ MATEK_identification <- function(
     return(res)
   }
 
-  # --- STAGE 1: TEF1 ---
   MATEK_results$stage1_tef1 <- run_matek_stage("TEF1", TEF1, TEF1_reference_sequences, NULL, tef1_threshold, "TEF1_results")
   
-  # --- STAGE 2: RPB2 ---
   MATEK_results$stage2_rpb2 <- run_matek_stage("RPB2", RPB2, RPB2_reference_sequences, unique(MATEK_results$stage1_tef1$sseqid), rpb2_threshold, "RPB2_results")
 
-  # --- STAGE 3: TEF3 ---
   MATEK_results$stage3_tef3 <- run_matek_stage("TEF3", TEF3, TEF3_reference_sequences, unique(MATEK_results$stage2_rpb2$sseqid), tef3_threshold, "TEF3_results")
 
-  # --- STAGE 4: LNS2 ---
-  MATEK_results$stage4_lns2 <- run_matek_stage("LNS2", LNS2, LNS2_reference_sequences, unique(MATEK_results$stage3_tef3$sseqid), lns2_threshold, "LNS2_results")
+  MATEK_results$stage4_pgk <- run_matek_stage("PGK", PGK, PGK_reference_sequences, unique(MATEK_results$stage3_tef3$sseqid), pgk_threshold, "PGK_results")
 
-  # --- STAGE 5: ACT ---
-  MATEK_results$stage5_act <- run_matek_stage("ACT", ACT, ACT_reference_sequences, unique(MATEK_results$stage4_lns2$sseqid), act_threshold, "ACT_results")
+  MATEK_results$stage5_act <- run_matek_stage("ACT", ACT, ACT_reference_sequences, unique(MATEK_results$stage4_pgk$sseqid), act_threshold, "ACT_results")
 
-  # --- STAGE 6: ACL1 ---
   MATEK_results$stage6_acl1 <- run_matek_stage("ACL1", ACL1, ACL1_reference_sequences, unique(MATEK_results$stage5_act$sseqid), acl1_threshold, "ACL1_results")
 
-  # --- STAGE 7: PGK (Custom logic for cutoff) ---
-  cat("\n[STAGE 7] Analyzing PGK (Phosphoglycerate kinase)...\n")
-  analyze_trichoderma_genome(genome_path = genome_path, forward_primers = PGK, reverse_primers = PGK,
+  cat("\n[STAGE 7] Analyzing LNS2 ...\n")
+  analyze_trichoderma_genome(genome_path = genome_path, forward_primers = LNS2, reverse_primers = LNS2,
                              max_mismatch = max_mismatch, max_amplicon_length = max_amplicon_length,
-                             min_amplicon_length = min_amplicon_length, output_dir = "PGK_results", all = FALSE)
+                             min_amplicon_length = min_amplicon_length, output_dir = "LNS2_results", all = FALSE)
   
-  PGK_filtered <- PGK_reference_sequences[names(PGK_reference_sequences) %in% unique(MATEK_results$stage6_acl1$sseqid)]
-  if (length(PGK_filtered) == 0) PGK_filtered <- PGK_reference_sequences
+  LNS2_filtered <- LNS2_reference_sequences[names(LNS2_reference_sequences) %in% unique(MATEK_results$stage6_acl1$sseqid)]
+  if (length(LNS2_filtered) == 0) LNS2_filtered <- LNS2_reference_sequences
   
-  stage7_results <- trichoderma_blast(query_sequence = "PGK_results/amplicons_with_primers.fasta", reference_sequences = PGK_filtered)
+  stage7_results <- trichoderma_blast(query_sequence = "LNS2_results/amplicons_with_primers.fasta", reference_sequences = LNS2_filtered)
   
   if (nrow(stage7_results) > 0) {
-    high_id_pgk <- stage7_results[stage7_results$average_pident_weighted > pgk_primary_threshold, ]
+    high_id_lns2 <- stage7_results[stage7_results$average_pident_weighted > lns2_primary_threshold, ]
     
-    if (nrow(high_id_pgk) > 0) {
-      # Logika: jeżeli zostaną więcej niż dwa genomy -> cutoff 99%
-      if (nrow(high_id_pgk) > 2) {
-        cat("  → More than 2 results found. Applying stricter cutoff (>", pgk_secondary_threshold, "%)...\n")
-        strict_results <- high_id_pgk[high_id_pgk$average_pident_weighted > pgk_secondary_threshold, ]
+    if (nrow(high_id_lns2) > 0) {
+      if (nrow(high_id_lns2) > 2) {
+        cat("  → More than 2 genomes remain. Applying strict cutoff (>", lns2_secondary_threshold, "%)...\n")
+        strict_results <- high_id_lns2[high_id_lns2$average_pident_weighted > lns2_secondary_threshold, ]
         if (nrow(strict_results) > 0) {
           stage7_results <- strict_results
+          cat("  → Successfully narrowed down to", nrow(stage7_results), "matches.\n")
         } else {
-          cat("  → No matches at 99%. Keeping results from primary threshold.\n")
-          stage7_results <- high_id_pgk
+          cat("  → No matches at 99%. Retaining results from primary threshold.\n")
+          stage7_results <- high_id_lns2
         }
       } else {
-        stage7_results <- high_id_pgk
+        stage7_results <- high_id_lns2
       }
     } else {
+      cat("⚠ No matches above primary threshold. Keeping top 5.\n")
       stage7_results <- stage7_results[1:min(5, nrow(stage7_results)), ]
     }
   }
-  MATEK_results$stage7_pgk <- stage7_results
+  MATEK_results$stage7_lns2 <- stage7_results
 
   cat("\n========== Final Identification ==========\n")
-  if (nrow(MATEK_results$stage7_pgk) > 0) {
-    MATEK_results$final_identification <- MATEK_results$stage7_pgk$sseqid
-    print(MATEK_results$stage7_pgk[, c("sseqid", "average_pident_weighted")])
+  if (nrow(MATEK_results$stage7_lns2) > 0) {
+    MATEK_results$final_identification <- MATEK_results$stage7_lns2$sseqid
+    print(MATEK_results$stage7_lns2[, c("sseqid", "average_pident_weighted")])
   } else {
     MATEK_results$final_identification <- "No reliable identification found"
   }
