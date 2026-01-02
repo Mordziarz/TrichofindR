@@ -108,8 +108,8 @@ MATEK_identification <- function(
     high_id_lns2 <- stage7_results[stage7_results$average_pident_weighted > lns2_primary_threshold, ]
     
     if (nrow(high_id_lns2) > 0) {
-      if (nrow(high_id_lns2) > 2) {
-        cat("  → More than 2 genomes remain. Applying strict cutoff (>", lns2_secondary_threshold, "%)...\n")
+      if (nrow(high_id_lns2) > 1) {
+        cat("  → More than 1 genome remain. Applying strict cutoff (>", lns2_secondary_threshold, "%)...\n")
         strict_results <- high_id_lns2[high_id_lns2$average_pident_weighted > lns2_secondary_threshold, ]
         if (nrow(strict_results) > 0) {
           stage7_results <- strict_results
