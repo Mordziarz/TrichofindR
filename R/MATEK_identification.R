@@ -19,7 +19,7 @@
 #' @param act_threshold Numeric. Percent identity threshold for Stage 5. Defaults to 95.
 #' @param acl1_threshold Numeric. Percent identity threshold for Stage 6. Defaults to 95.
 #' @param lns2_primary_threshold Numeric. Initial threshold for LNS2 (Stage 7). Defaults to 95.
-#' @param lns2_secondary_threshold Numeric. Strict threshold applied if >2 matches remain in Stage 7. Defaults to 99.
+#' @param lns2_secondary_threshold Numeric. Strict threshold applied if >1 matches remain in Stage 7. Defaults to 99.
 #'
 #' @return A list containing results from all 7 identification stages and the final identification.
 #'
