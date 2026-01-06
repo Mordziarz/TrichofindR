@@ -35,7 +35,7 @@ You will find the results of the analysis in the specified output directory. The
     amplicons_without_primers.fasta: A FASTA file containing only the gene sequences, with the primers trimmed off.
 
 ```r
-results <- analyze_trichoderma_genome(
+results <- TrichofindR::analyze_trichoderma_genome(
   genome_path = "path/to/your/genome",
   forward_primers      = c("CATCGAGAAGTTCGAGAAGG","AACTTGCAGGCAATGTGG"),
   reverse_primers      = c("AACTTGCAGGCAATGTGG","CATCGAGAAGTTCGAGAAGG"),  
@@ -53,7 +53,7 @@ I have pre-coded all of the possible primers mentioned in the article. You can e
 For example, to identify the RPB2 gene, you would use this code:
 
 ```r
-results <- analyze_trichoderma_genome(
+results <- TrichofindR::analyze_trichoderma_genome(
   genome_path = "path/to/your/genome",
   forward_primers      = RPB2,
   reverse_primers      = RPB2,  
@@ -69,7 +69,7 @@ results <- analyze_trichoderma_genome(
 I created a function to identify 9 amplicons at once by providing only the path to the Trichoderma genome. The function automatically creates 9 folders in your working directory, each with a different amplicon.
 
 ```r
-all_amplicon_identification(genome_path = "path/to/your/genome")
+TrichofindR::all_amplicon_identification(genome_path = "path/to/your/genome")
 ```
 
 # BLAST against TrichofindR database
@@ -99,7 +99,7 @@ The trichoderma_blast() function allows you to perform a BLAST search against a 
 I've implemented a critical change to how I process BLAST results within the trichoderma_blast function, shifting from a simple percent identity (pident) to a Length-Weighted Average Percent Identity. This modification was necessary because the standard BLAST output often fragments a single sequence match into multiple High-Scoring Segment Pairs (HSPs), meaning a simple arithmetic average of the % identities would be misleading. My new logic works in three steps: I first calculate the absolute number of matching nucleotides for each fragment (matching_nts = pident * length / 100), which assigns a length-based weight. Then, I aggregate these results by species (sseqid), summing both the matching nucleotides and the total covered length for all fragments belonging to that species. Finally, I calculate the true weighted identity (average_pident_weighted = (total_matching_nts / total_length) * 100) by dividing the total matching nucleotides by the total covered length. This approach ensures that longer, more complete, and therefore more significant fragments have a proportionally greater impact on the final score, providing a more robust and biologically meaningful measure of similarity across the entire covered region.
 
 ```r
-results_blast <- trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
+results_blast <- TrichofindR::trichoderma_blast(query_sequence = "your_gene_sequence.fasta",
                                reference_sequences = ITS_reference_sequences)
 ```
 
@@ -110,7 +110,7 @@ MATEK - Multilocus Analytical Trichoderma Evaluation Key
 I developed an automated Trichoderma identification pipeline based on TEF1, RPB2, TEF3, PGK, ACT, ACL1, and LNS2 identification from FASTA sequence.
 
 ```r
-MATEK_identification <- MATEK_identification(genome_path = "your_genome_sequence.fasta")
+MATEK_identification <- TrichofindR::MATEK_identification(genome_path = "your_genome_sequence.fasta")
 
 MATEK_identification$stage1_tef1
 MATEK_identification$stage2_rpb2
@@ -127,7 +127,7 @@ MATEK_identification$final_identification
 The goal of this identification is to create a single FASTA file containing all amplicons and compare it against the TrichofindR database. I decided to exclude TUB2 because it always appears in two copies in Trichoderma genomes. ITS was also excluded from this analysis.
 
 ```r
-IMLDTS_identification <- IMLDTS_identification(genome_path = "your_genome_sequence.fasta",identity_threshold = 95,max_target_seqs = 10)
+IMLDTS_identification <- TrichofindR::IMLDTS_identification(genome_path = "your_genome_sequence.fasta",identity_threshold = 95,max_target_seqs = 10)
 
 ```
 
