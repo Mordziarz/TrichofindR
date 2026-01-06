@@ -18,6 +18,7 @@ library(GenomicRanges)
 library(IRanges)
 library(rBLAST)
 library(dplyr)
+library(parallel)
 ```
 Be sure to install the rBLAST package (https://github.com/mhahsler/rBLAST)﻿
 
