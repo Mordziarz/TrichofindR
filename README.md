@@ -130,3 +130,23 @@ The goal of this identification is to create a single FASTA file containing all 
 IMLDTS_identification <- IMLDTS_identification(genome_path = "your_genome_sequence.fasta",identity_threshold = 95,max_target_seqs = 10)
 
 ```
+
+# Batch Barcode Extraction and Species Identification
+
+If you have a folder full of genome files (FASTA/FNA) and you want to analyze them all at once, the TrichofindR::multi_identification() function is your go-to tool.
+
+It automatically scans your folder, finds the barcodes, and runs the identification pipelines (IMLDTS and MATEK) for every single genome it finds. Once it’s finished, you’ll get a clean summary table called Summary_Report_Parallel.csv with all the results.
+
+What does it actually do?
+
+1. Parallel Processing: Uses multiple CPU cores to speed things up (perfect for large datasets).
+
+2. Automatic Cleanup: Organizes results into separate folders for each genome.
+
+3. Orientation Fix: It makes sure every sequence is saved in the correct Forward-to-Reverse orientation.
+
+4. Combined Files: It automatically creates "Combined" FASTA files for each locus (e.g., Combined_ACL1_all_genomes.fasta), so you have all your sequences ready for further analysis like building trees.
+
+```r
+multi <- TrichofindR::multi_identification(main_dir = "path/to/your/folder",n_cores = 50)
+```
