@@ -76,25 +76,21 @@ TrichofindR::all_amplicon_identification(genome_path = "path/to/your/genome")
 
 The trichoderma_blast() function allows you to perform a BLAST search against a reference database defined in TrichofindR (the reference_sequences argument). Currently, the following reference databases are available:
 
-1. ITS (ITS_reference_sequences)
+1. RPB2 (RPB2_reference_sequences)
 
-2. RPB2 (RPB2_reference_sequences)
+2. TEF1 (TEF1_reference_sequences)
 
-3. TEF1 (TEF1_reference_sequences)
+3. LNS2 (LNS2_reference_sequences)
 
-4. LNS2 (LNS2_reference_sequences)
+4. ACT (ACT_reference_sequences)
 
-5. ACT (ACT_reference_sequences)
+5. TEF3 (TEF3_reference_sequences)
 
-6. TUB2 (TUB2_reference_sequences)
+6. PGK (PGK_reference_sequences)
 
-7. TEF3 (TEF3_reference_sequences)
+7. ACL1 (ACL1_reference_sequences)
 
-8. PGK (PGK_reference_sequences)
-
-9. ACL1 (ACL1_reference_sequences)
-
-10. Ultra_fasta (IMLDTS_reference_sequences)
+8. Ultra_fasta (IMLDTS_reference_sequences)
 
 I've implemented a critical change to how I process BLAST results within the trichoderma_blast function, shifting from a simple percent identity (pident) to a Length-Weighted Average Percent Identity. This modification was necessary because the standard BLAST output often fragments a single sequence match into multiple High-Scoring Segment Pairs (HSPs), meaning a simple arithmetic average of the % identities would be misleading. My new logic works in three steps: I first calculate the absolute number of matching nucleotides for each fragment (matching_nts = pident * length / 100), which assigns a length-based weight. Then, I aggregate these results by species (sseqid), summing both the matching nucleotides and the total covered length for all fragments belonging to that species. Finally, I calculate the true weighted identity (average_pident_weighted = (total_matching_nts / total_length) * 100) by dividing the total matching nucleotides by the total covered length. This approach ensures that longer, more complete, and therefore more significant fragments have a proportionally greater impact on the final score, providing a more robust and biologically meaningful measure of similarity across the entire covered region.
 
