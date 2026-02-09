@@ -131,19 +131,19 @@ trichoderma_blast <- function(query_sequence = "",
   blast_result <- predict(blast_db, query_sequences)
 
   results_aggregated <- blast_result %>%
-  mutate(matching_nts = pident * length / 100) %>%
-  group_by(qseqid, sseqid) %>%
-  summarize(
+  dplyr::mutate(matching_nts = pident * length / 100) %>%
+  dplyr::group_by(qseqid, sseqid) %>%
+  dplyr::summarize(
     total_length = sum(length),                 
     total_matching_nts = sum(matching_nts),    
     best_evalue = min(evalue),
     max_bitscore = max(bitscore),
     .groups = 'drop'
   ) %>%
-  mutate(
+  dplyr::mutate(
     average_pident_weighted = (total_matching_nts / total_length) * 100
   ) %>%
-  arrange(desc(average_pident_weighted), desc(total_length))
+  dplyr::arrange(desc(average_pident_weighted), desc(total_length))
 
   return(results_aggregated)
 }
