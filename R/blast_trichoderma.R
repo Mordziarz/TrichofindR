@@ -52,7 +52,7 @@ trichoderma_blast <- function(query_sequence = "",
     stop("No valid sequences found in query file")
   }
 
-  blast_result <- rBLAST::predict(blast_db, query_sequences)
+  blast_result <- predict(blast_db, query_sequences)
 
   if (is.null(blast_result) || nrow(blast_result) == 0) {
     message("--- No BLAST hits found for: ", basename(query_sequence), " ---")
